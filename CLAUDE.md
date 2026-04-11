@@ -26,10 +26,13 @@ When a question involves "how does Agent X handle memory/context," check `llm-me
 ## Writing Style
 
 - English for research files (consistent with llm-memory-research)
-- Chinese is acceptable for blog drafts in `blog/`
 - Avoid emojis in research files
 - Use tables for any comparison that has ≥3 rows
 - Quote official documentation exactly when citing definitions
+
+## Blog Output
+
+**Blogs are NOT written in this repo.** They are drafted in `~/dev/CyberMnema/timeline/YYYY/MM/W{n}/blog-<topic>-YYYY-MM-DD.md`, following the user's existing convention. This repo only holds research artifacts that blogs reference by path.
 
 ## What NOT to Put Here
 

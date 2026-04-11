@@ -54,11 +54,13 @@ This repository grew out of Agent architecture research originally done in `Cybe
 | `openai-assistants.research.md` | OpenAI Assistants/Responses API | 📋 Planned |
 | `my-agent-2.0.research.md` | Personal production system (P&E + typed dataflow) | 📋 Planned |
 
-## Blog Posts
+## Blog Output
 
-| File | Status |
-|------|--------|
-| [blog/blog-1-what-is-agent.outline.md](./blog/blog-1-what-is-agent.outline.md) | 📝 Outline ready, drafting next |
+Blogs drafted from this research live in the user's main work directory `~/dev/CyberMnema/`, following the existing `blog-*.md` convention. This repo only holds research artifacts.
+
+| Blog | Location | Status |
+|------|----------|--------|
+| 到底什么是 Agent | `/Users/linguanguo/dev/CyberMnema/timeline/2026/04/W15/blog-到底什么是Agent-2026-04-11.md` | 📝 Outline ready, drafting next |
 
 ## Repository Structure
 
@@ -76,10 +78,7 @@ llm-agent-research/
 ├── langgraph.research.md                  # (planned)
 ├── vercel-ai-sdk.research.md              # (planned)
 ├── openai-assistants.research.md          # (planned)
-├── my-agent-2.0.research.md               # (planned)
-│
-└── blog/
-    └── blog-1-what-is-agent.outline.md    # Blog #1 outline
+└── my-agent-2.0.research.md               # (planned)
 ```
 
 ## License
