@@ -1,212 +1,375 @@
-# Google ADK (Agent Development Kit) Research
+# Google ADK Agent Architecture Research
 
-Last Updated: 2026-04-11
+Last Updated: 2026-04-12
 
-> **Research Methodology**: Direct WebFetch verification against `https://github.com/google/adk-python` README (primary source) plus web search cross-reference. Not yet source-level analyzed at the depth of `mastra.research.md` — this is a README-level + examples-level survey. Deeper source-level analysis remains TODO.
+> **Research Methodology**: Source-level analysis of google/adk-python at `/Users/linguanguo/dev/llm-agent-research/google-adk` (local clone of github.com/google/adk-python). This replaces the earlier README-level version. Every architectural claim cites a specific file and line number from the source.
 
 ## Sources
 
-- [Google ADK GitHub repository](https://github.com/google/adk-python) (accessed 2026-04-11)
-- [Google ADK official documentation](https://adk.dev/) (accessed 2026-04-11)
-- [Google ADK Python Quick Start](https://adk.dev/get-started/python/) (accessed 2026-04-11)
-- [Google ADK Multi-Agent Systems Guide](https://adk.dev/agents/multi-agents/) (accessed 2026-04-11)
-- [Google ADK Runtime and Event Loop](https://adk.dev/runtime/event-loop/) (accessed 2026-04-11)
+**Core Agent Files**
+- `src/google/adk/agents/base_agent.py:86-701` — `BaseAgent`: `run_async()`, callback system
+- `src/google/adk/agents/llm_agent.py:195-1015` — `LlmAgent`: fields, `_run_async_impl`, `_llm_flow` property
+- `src/google/adk/agents/loop_agent.py:52-166` — `LoopAgent._run_async_impl`
+- `src/google/adk/agents/sequential_agent.py:48-159` — `SequentialAgent._run_async_impl`
+- `src/google/adk/agents/parallel_agent.py:150-216` — `ParallelAgent._run_async_impl`
+- `src/google/adk/agents/langgraph_agent.py:52-143` — `LangGraphAgent` (concept wrapper)
 
-## Overview
+**Execution Loop**
+- `src/google/adk/flows/llm_flows/base_llm_flow.py:797-1230` — `BaseLlmFlow.run_async()`, `_run_one_step_async`, tool dispatch
+- `src/google/adk/flows/llm_flows/single_flow.py:78-88` — `SingleFlow`: assembles request/response processor list
+- `src/google/adk/flows/llm_flows/auto_flow.py:23-44` — `AutoFlow`: adds agent transfer processor
+- `src/google/adk/flows/llm_flows/functions.py:355-433` — `handle_function_calls_async`: parallel tool execution
 
-**Exact opening description (from README)**:
+**Planner Files**
+- `src/google/adk/planners/base_planner.py:29-68` — `BasePlanner` ABC
+- `src/google/adk/planners/plan_re_act_planner.py:35-210` — `PlanReActPlanner`
+- `src/google/adk/planners/built_in_planner.py:32-86` — `BuiltInPlanner` (thinking config)
+- `src/google/adk/flows/llm_flows/_nl_planning.py:39-133` — Planning processors in flow
 
-> *"an open-source, code-first Python framework for building, evaluating, and deploying sophisticated AI agents with flexibility and control"*
+**Multi-Agent**
+- `src/google/adk/flows/llm_flows/agent_transfer.py:37-175` — `transfer_to_agent` tool injection
+- `src/google/adk/tools/transfer_to_agent_tool.py:26-89` — `TransferToAgentTool`
+- `src/google/adk/tools/agent_tool.py:94-304` — `AgentTool`: wrap agent as tool
 
-**Project basics**:
-- **Maintained by**: Google (official)
-- **License**: Open source
-- **Language**: Python
-- **Stars**: 18.9k (as of 2026-04-11)
-- **Forks**: 3.2k
-- **Release cadence**: Bi-weekly (as of early 2026)
-- **Models supported**: Model-agnostic in principle; Gemini-first (`gemini-flash-latest` is the default in examples), with support for OpenAI-compatible APIs
+**Events and State**
+- `src/google/adk/events/event.py:31-130` — `Event` class
+- `src/google/adk/events/event_actions.py:51-115` — `EventActions`
+- `src/google/adk/runners.py:503-633` — `Runner.run_async()`: entry point
+
+**Examples**
+- `contributing/samples/workflow_agent_seq/agent.py` — `SequentialAgent` pipeline
+- `contributing/samples/workflow_triage/agent.py` + `execution_agent.py` — LLM triage pattern
+
+---
 
 ## 1. Agent Definition (API Layer)
 
-### Core Classes
+`LlmAgent` (aliased as `Agent`) is a Pydantic `BaseModel` at `src/google/adk/agents/llm_agent.py:195`. It inherits from `BaseAgent` (`base_agent.py:86`), which provides `run_async()`, `run_live()`, and the callback framework.
 
-- `BaseAgent` — abstract base (in `src/google/adk/agents/base_agent.py`)
-- `Agent` — standard LLM-driven agent (inherits from BaseAgent)
-- Workflow agents for orchestration:
-  - `SequentialAgent` — runs sub-agents one after another
-  - `ParallelAgent` — runs sub-agents concurrently
-  - `LoopAgent` — repeats a sequence of sub-agents until a stop condition
-
-### Minimal Example (from official Quick Start)
+Key fields on `LlmAgent` (lines 204-464):
 
 ```python
-from google.adk import Agent
-
-root_agent = Agent(
-    name="search_assistant",
-    model="gemini-2.5-flash",
-    instruction="You are a helpful assistant...",
-    description="An assistant that can search the web.",
-    tools=[google_search]
-)
+model: Union[str, BaseLlm] = ''        # Default: gemini-2.5-flash
+instruction: Union[str, InstructionProvider] = ''
+tools: list[ToolUnion] = []
+input_schema: Optional[type[BaseModel]] = None   # For AgentTool wrapping
+output_schema: Optional[SchemaType] = None       # Constrains final response
+output_key: Optional[str] = None        # Save final text to session.state[key]
+planner: Optional[BasePlanner] = None   # Optional planning prompt modifier
+disallow_transfer_to_parent: bool = False
+disallow_transfer_to_peers: bool = False
 ```
 
-**Configuration parameters**:
-- `name` — unique identifier, must be a valid Python identifier
-- `model` — model string or model object
-- `instruction` — system prompt defining behavior
-- `tools` — list of tools available to the agent
-- `description` — optional human-readable description
-- `sub_agents` — optional list of sub-agents (creates a tree structure)
-
-### Project Initialization
-
-ADK ships with a CLI:
-- `adk create <project_name>` — scaffolds a new project with `agent.py` containing a `root_agent`
-- `adk run` — executes the agent in CLI mode
-- `adk web` — runs a web-based interaction UI
-
-## 2. Execution Model: Pure ReAct
-
-**Verified via README and official docs**: Google ADK uses a **pure ReAct loop** as its core execution model. The official docs describe the pattern as:
-
-> "ReAct pattern is powerful for complex problem-solving tasks where the agent needs to reason, gather information, and act iteratively."
-
-### The Loop (per official runtime docs)
-
-For a single `Agent`:
-
-1. **Reason** — LLM reads the current context (instruction + conversation history + tool results) and reasons about the next action
-2. **Act** — LLM emits a tool_call or final response
-3. **Observe** — If tool_call, the Runner executes the tool and appends the result to context
-4. **Repeat** — Until LLM emits a final response or a stop condition triggers
-
-The loop is driven by a `Runner` class that:
-- Loads session and invocation context
-- Calls the agent's `run_async()` method
-- Yields events (tool calls, responses, state deltas)
-- Persists session state
-- Prepares the next iteration
-
-**No separate "planning phase"**. No pre-execution Plan artifact. Planning is implicit in the LLM's reasoning at each step.
-
-## 3. Workflow / Orchestration (Multi-Agent Composition)
-
-Google ADK's multi-agent model uses **Workflow Agents** as the orchestration primitive. Unlike Mastra (which uses a `Workflow` DAG with arbitrary operators), ADK provides three fixed orchestrators:
-
-| Orchestrator | Behavior |
-|---|---|
-| `SequentialAgent` | Runs sub-agents one after another, sharing `session.state` |
-| `ParallelAgent` | Runs sub-agents concurrently, shared state |
-| `LoopAgent` | Repeats a sequence of sub-agents until `max_iterations` or an escalation signal |
-
-### Example: Generator-Critic Loop
+The `_llm_flow` property at `llm_agent.py:717-725` decides whether agent transfer is enabled:
 
 ```python
-LoopAgent(
-    name="generator_critic",
-    sub_agents=[generator_agent, critic_agent, refinement_agent],
-    max_iterations=3
-)
+@property
+def _llm_flow(self) -> BaseLlmFlow:
+    if (self.disallow_transfer_to_parent
+            and self.disallow_transfer_to_peers
+            and not self.sub_agents):
+        return SingleFlow()   # No transfer capability
+    else:
+        return AutoFlow()     # Adds transfer_to_agent tool to LLM
 ```
 
-Each sub-agent inside the loop is still a **pure ReAct agent**. The LoopAgent only controls the outer iteration.
+`_run_async_impl` at `llm_agent.py:467-504` delegates to `self._llm_flow.run_async(ctx)` and handles the resumption logic for multi-turn sessions.
 
-**Important subtlety**: `LoopAgent` is often marketed as "planning + execution," but it is **not** Plan-and-Execute in the architectural sense:
-- No structured Plan artifact is produced before execution
-- Each sub-agent still decides its own actions via ReAct
-- The loop is just flow-control over multiple ReAct agents
+---
 
-### Multi-Agent Communication Mechanisms
+## 2. Execution Model: Pure ReAct Loop
 
-1. **Shared state** (`session.state`) — passive communication via a shared dictionary
-2. **LLM-driven delegation** (`transfer_to_agent(agent_name)`) — one agent's LLM can dynamically route to another agent (this is the closest ADK gets to "dynamic routing")
-3. **AgentTool wrapping** — wrap an agent as a tool that another agent can call
+**The source confirms: Google ADK is a pure ReAct loop.** The main loop lives in `src/google/adk/flows/llm_flows/base_llm_flow.py:797-810`:
 
-## 4. Control & Predictability
+```python
+async def run_async(self, invocation_context):
+    """Runs the flow."""
+    while True:
+        last_event = None
+        async with Aclosing(self._run_one_step_async(invocation_context)) as agen:
+            async for event in agen:
+                last_event = event
+                yield event
+        if not last_event or last_event.is_final_response() or last_event.partial:
+            break
+```
 
-### Stop Conditions
+This is the canonical ReAct `while True` loop. One complete iteration equals one LLM call. The loop breaks only when `last_event.is_final_response()` — which is true when the LLM returns a response with no pending function calls.
 
-- Per-agent: implicit context-window limit (no explicit `max_iterations` for individual `Agent` by default)
-- `LoopAgent`: explicit `max_iterations` parameter
-- Escalation: a sub-agent can set `escalate=True` in its event action to break out of a loop
+`_run_one_step_async` at `base_llm_flow.py:812-895` is one ReAct step:
 
-### State Management
+1. Build `LlmRequest` via `_preprocess_async` (instructions, tools, planner prompts)
+2. Call the LLM via `_call_llm_async`
+3. For each `LlmResponse`, run `_postprocess_async`: yield the response event; if function calls are present, execute them via `_postprocess_handle_function_calls_async`
 
-- **Event-based model**: state changes are applied via `Event` objects with `state_delta`
-- **Atomicity**: partial (streaming) events do NOT apply state changes; only complete events do
-- **Dirty reads**: same-invocation code can read local uncommitted state (convenience for multi-step coordination)
+**Tool execution** at `functions.py:394-410` runs all function calls in one turn **in parallel** via `asyncio.create_task` + `asyncio.gather`.
 
-### Type Validation
+**Loop termination** relies entirely on the LLM returning a response without function calls (`is_final_response()`). There is no `maxSteps` parameter on `LlmAgent`. The loop is theoretically unbounded. Only `LoopAgent` has explicit `max_iterations`.
 
-- Agent `name` must be a valid Python identifier (validated by Pydantic)
-- Tools are defined via Python function signatures and type hints
-- **No explicit schema validation** comparable to Mastra's Zod-based Typed Output
-- No flow-level type safety
+**There is no Plan artifact, no Plan class, no plan executor.** Searching the entire codebase finds zero classes named `Plan`, `PlanStep`, `ExecutionPlan`, or `PlanExecutor`. The only "plan" word appears in `PlanReActPlanner` — analyzed in section 5 below.
 
-### Human-in-the-Loop
+---
 
-- **Callback system**: callbacks can intercept agent execution before/after
-- From docs: *"When a list of callbacks is provided, callbacks will be called in order until one returns non-None"* — callbacks can interrupt or modify execution
-- Official example: `a2a_human_in_loop` demonstrates a human confirmation step for tool calls
+## 3. Workflow Concept
 
-### No Plan Artifact
+ADK's workflow primitives are pure Python control-flow constructs with no LLM involvement in orchestration decisions.
 
-- No standalone Plan object
-- No `plan_agent` / `execute_agent` separation
-- Planning happens implicitly inside each agent's reasoning steps
-- **Google ADK does not support Plan-and-Execute as a first-class architectural primitive**
+### SequentialAgent (`sequential_agent.py:54-92`)
 
-## 5. Comparison with Mastra
+```python
+for i in range(start_index, len(self.sub_agents)):
+    sub_agent = self.sub_agents[i]
+    async with Aclosing(sub_agent.run_async(ctx)) as agen:
+        async for event in agen:
+            yield event
+```
+
+A Python for-loop. Execution order is fixed at construction. Sub-agents communicate via `session.state` — agent A sets `output_key="foo"`, agent B reads `{foo}` via instruction template injection.
+
+### LoopAgent (`loop_agent.py:82-115`)
+
+```python
+while (
+    not self.max_iterations or times_looped < self.max_iterations
+) and not (should_exit or pause_invocation):
+    for i in range(start_index, len(self.sub_agents)):
+        async for event in sub_agent.run_async(ctx):
+            yield event
+            if event.actions.escalate:
+                should_exit = True
+```
+
+Outer Python while-loop, bounded by `max_iterations` or `event.actions.escalate = True`. The escalation signal must be emitted by one of the sub-agents by setting `tool_context.actions.escalate = True` in a tool call. No LLM is consulted for the loop control decision. Each sub-agent inside runs its own independent ReAct loop.
+
+### ParallelAgent (`parallel_agent.py:164-205`)
+
+Runs all sub-agents concurrently via `asyncio.TaskGroup` (Python 3.11+) or manual task creation. Each sub-agent gets an isolated `InvocationContext.branch` to prevent cross-contamination of event history.
+
+**These three are flow-control primitives, not a Plan executor.** They are the Python equivalent of sequential/parallel composition. Compared to Mastra's Workflow DAG, ADK's three fixed types are less general (no `.branch()`, no arbitrary `.then()` chains of heterogeneous steps) but simpler to understand.
+
+---
+
+## 4. Multi-Agent Composition and Handoff
+
+ADK has two distinct multi-agent patterns with very different observability properties.
+
+### Pattern A: `transfer_to_agent` (Context-Preserving)
+
+When `AutoFlow` is active, `_AgentTransferLlmRequestProcessor` (`agent_transfer.py:37-72`) injects a `TransferToAgentTool` into the LLM request. A system prompt instruction (`agent_transfer.py:109-126`) tells the LLM when to transfer:
+
+> "If another agent is better for answering the question according to its description, call `transfer_to_agent` function to transfer the question to that agent."
+
+The LLM calls the tool with `agent_name`. The tool implementation at `transfer_to_agent_tool.py:26-40`:
+
+```python
+def transfer_to_agent(agent_name: str, tool_context: ToolContext) -> None:
+    tool_context.actions.transfer_to_agent = agent_name
+```
+
+After tool execution, `base_llm_flow.py:1140-1147` detects the transfer:
+
+```python
+transfer_to_agent = function_response_event.actions.transfer_to_agent
+if transfer_to_agent:
+    agent_to_run = self._get_agent_to_run(invocation_context, transfer_to_agent)
+    async with Aclosing(agent_to_run.run_async(invocation_context)) as agen:
+        async for event in agen:
+            yield event
+```
+
+The child agent receives the **same `invocation_context`** — it sees the parent's full conversation history. All child events are yielded to the parent's caller. The next user turn routes back to `LlmAgent._get_subagent_to_resume` (`llm_agent.py:727-770`), which finds the last transfer target by scanning the event history.
+
+**Trace fidelity**: full. The child's intermediate reasoning and tool calls are visible in the session events.
+
+### Pattern B: `AgentTool` (Isolated, Final-Text Only)
+
+`src/google/adk/tools/agent_tool.py:192-286` wraps any `BaseAgent` as a callable tool:
+
+```python
+async def run_async(self, *, args, tool_context):
+    runner = Runner(
+        agent=self.agent,
+        session_service=InMemorySessionService(),   # Brand-new isolated session
+        ...
+    )
+    last_content = None
+    async for event in runner.run_async(...):
+        if event.actions.state_delta:
+            tool_context.state.update(event.actions.state_delta)
+        if event.content:
+            last_content = event.content    # Only last content kept
+    return merged_text   # Only final text returned; intermediate steps discarded
+```
+
+The sub-agent runs in a completely isolated session. All intermediate tool calls, reasoning steps, and partial responses from the sub-agent are discarded. Only the final text (and `state_delta`) is returned to the parent.
+
+This is the exact failure mode described in Cognition's "Don't Build Multi-Agents": the parent loses the child's reasoning trace. ADK ships this pattern as `AgentTool`.
+
+**ADK offers both patterns.** The documentation recommends `transfer_to_agent` for routing to specialist agents, and `AgentTool` for tool-like sub-tasks where only the result matters.
+
+---
+
+## 5. Control and Predictability Mechanisms
+
+### The Planner System: Looks Like P&E, Is Not
+
+`LlmAgent` has a `planner: Optional[BasePlanner]` field (`llm_agent.py:355-361`). Two concrete implementations exist.
+
+**`PlanReActPlanner`** (`planners/plan_re_act_planner.py:35-210`) is the most interesting. Its `_build_nl_planner_instruction` method constructs a system prompt (lines 153-210):
+
+> "Follow this process when answering the question:
+> (1) first come up with a plan in natural language text format;
+> (2) Then use tools to execute the plan...
+>
+> The planning part should be under `/*PLANNING*/`.
+> The tool code snippets should be under `/*ACTION*/`.
+> The final answer part should be under `/*FINAL_ANSWER*/`."
+
+This is a **prompt engineering convention**. The `_NlPlanningRequestProcessor` at `_nl_planning.py:39-65` appends this instruction to the `LlmRequest` before each LLM call. The `_NlPlanningResponse` processor at `_nl_planning.py:69-103` parses the response, marks `/*PLANNING*/` and `/*REASONING*/` parts as `thought=True` (hidden), and keeps the `/*FINAL_ANSWER*/` part visible.
+
+**The key structural point**: this runs inside the existing `while True` ReAct loop. There is no separate "plan phase" before the loop. The planner does not produce a `Plan` object that the executor then processes step by step. The LLM produces a plan-formatted text and then proceeds with tool calls in subsequent iterations of the same loop. Re-planning (via `/*REPLANNING*/`) is handled by the LLM naturally as part of a new loop iteration.
+
+**`BuiltInPlanner`** (`planners/built_in_planner.py:57-70`) sets `llm_request.config.thinking_config` — it enables Gemini's built-in chain-of-thought. The thinking tokens are hidden. This is not planning in the P&E sense; it is model-internal reasoning that happens within a single LLM call.
+
+### Callbacks as Interceptors
+
+`before_model_callback` / `after_model_callback` / `before_tool_callback` / `after_tool_callback` (`llm_agent.py:374-463`) intercept the ReAct loop at specific points. If `before_model_callback` returns a non-None `LlmResponse`, the LLM call is skipped and that response is used directly. This is ADK's primary human-in-the-loop mechanism — the callback can prompt for human approval before proceeding.
+
+### Session State as Event Bus
+
+State changes flow through `Event.actions.state_delta` — a `dict[str, object]` attached to any event. The `Runner` applies `state_delta` to `session.state` as events are processed. Partial (streaming) events do **not** trigger state updates; only complete events do. This atomicity prevents partial tool results from polluting state.
+
+---
+
+## 6. Typing and Validation
+
+ADK uses Pydantic `BaseModel` for all framework scaffolding. Validation exists at these boundaries:
+
+1. **Agent construction**: `name` validated as Python identifier (`base_agent.py:556-570`); `generate_content_config` validated to not include `tools` or `system_instruction` (those must go through dedicated fields, `llm_agent.py:865-882`)
+2. **Agent I/O when used as `AgentTool`**: `input_schema: type[BaseModel]` defines the tool parameters; `output_schema` is validated via `validate_schema()` on the final text (`llm_agent.py:858`)
+3. **Tool inputs**: Python function type hints converted to JSON Schema for the LLM's function declaration
+4. **Event structure**: all `Event`, `EventActions`, `LlmRequest`, `LlmResponse` are Pydantic models
+
+**What is not validated**:
+- Data flowing through `session.state` between agents — untyped `dict[str, object]`
+- `output_key` / `{variable_name}` template binding — pure string interpolation, no schema check
+- Sequential pipeline step-to-step contracts — agent A's `output_key="foo"` is read by agent B as raw string; no schema enforces the structure
+
+**Comparison to Mastra's Zod**: Mastra validates `outputSchema` / `inputSchema` on every Workflow step. ADK validates at agent-level I/O only when wrapped as `AgentTool`. For `SequentialAgent` pipelines, there is no equivalent of Mastra's step boundary validation — just untyped string passing through state.
+
+---
+
+## 7. Direct Comparison with Mastra
 
 | Dimension | Google ADK | Mastra |
 |---|---|---|
-| **Core execution** | Pure ReAct | Pure ReAct |
-| **Loop control** | `LoopAgent` with `max_iterations` | `.dowhile()` with arbitrary condition function |
-| **Multi-agent orchestration** | Fixed: Sequential / Parallel / Loop | General Workflow DAG with `.then()` / `.parallel()` / `.foreach()` / `.dowhile()` |
-| **State management** | Event-based + `session.state` | Message history + optional memory system |
-| **Plan artifact** | None | None |
-| **Type validation** | Python type hints (Pydantic) | Zod schemas (boundary-level) |
-| **Human-in-the-loop** | Callback system + `a2a_human_in_loop` example | `.suspend()` / `.resume()` on workflow steps |
-| **Tools** | User-defined Python functions | User-defined via `createTool()` |
+| **Core loop** | `while True: _run_one_step_async` (`base_llm_flow.py:797`) | `.dowhile(agenticExecutionWorkflow)` (`agentic-loop/index.ts:72`) |
+| **Loop termination** | `last_event.is_final_response()` — LLM must stop itself | `stepResult.isContinued = false` OR `stopWhen(stepCountIs(5))` default |
+| **No-plan-artifact proof** | No `Plan`, `PlanStep`, `ExecutionPlan` class anywhere in codebase | No "Plan" message type, no separate planning phase |
+| **Tool execution** | `asyncio.gather` (parallel) per LLM turn (`functions.py:394`) | `.foreach(toolCallStep, { concurrency })` per iteration |
+| **Workflow orchestration** | 3 fixed primitives: Sequential / Parallel / Loop | General DAG: `.then()`, `.parallel()`, `.foreach()`, `.dowhile()`, `.branch()` |
+| **Step-to-step typing** | Untyped `session.state` dict + string template injection | Zod `inputSchema` / `outputSchema` on each Step |
+| **Multi-agent handoff** | Two modes: `transfer_to_agent` (full context) + `AgentTool` (text only) | One mode: sub-agent via tool call (final result only) |
+| **Max iterations guard** | Only on `LoopAgent`; `LlmAgent` has no default limit | `stopWhen: stepCountIs(5)` default on every agent |
+| **Human-in-the-loop** | `before_model_callback` + `before_tool_callback` | `.suspend()` / `.resume()` on workflow steps |
 | **Language** | Python | TypeScript |
 
-**Assessment**: Google ADK and Mastra are **architectural twins in different languages**. Both use ReAct as the core execution model, both provide workflow-level orchestration as the outer layer, both lack a Plan artifact, both rely on boundary validation rather than flow-level types.
+**ADK's `transfer_to_agent` is better than Mastra's model**: it preserves the full trace and shares context. Mastra's only option (sub-agent via tool) discards intermediate reasoning. ADK's `AgentTool` does the same as Mastra, but ADK at least offers the better alternative.
 
-The main differences are in language choice, orchestration primitive design (Mastra's DAG is more flexible than ADK's fixed three), and runtime implementation details. **They are not fundamentally different architectures.**
+**The loops are structurally equivalent**: `while True: _run_one_step_async` vs. `.dowhile(agenticExecutionWorkflow)`. Different syntax, same semantic. The primary behavioral difference is that Mastra enforces a default 5-step limit while ADK relies on the LLM's own stop signal.
 
-## 6. Position in the Agent Map
+---
 
-**Google ADK belongs to category ④a (Code Framework, ReAct school).**
+## 8. Representative Examples
 
-Rationale:
-1. ✅ Core execution is ReAct: each agent decides its next action via LLM reasoning at every step
-2. ✅ No global planning phase: `LoopAgent` is flow-control orchestration, not a Plan-Execute separation
-3. ✅ Code framework: Python library, not a low-code or cloud platform
-4. ✅ Open source, self-hostable (also deployable to Vertex AI, but this doesn't change the architecture)
+### Example 1: Sequential Code Pipeline
 
-**Not ④b** because there is no structured Plan artifact generated before execution.
-**Not ③** because there is no visual/low-code interface.
-**Not ①②** because ADK is a framework you build with, not a ready-to-use product.
+From `contributing/samples/workflow_agent_seq/agent.py` — three agents in a pipeline:
 
-## 7. Implications for the Agent Map
+```python
+code_writer_agent = LlmAgent(
+    name="CodeWriterAgent",
+    instruction="Write Python code...",
+    output_key="generated_code",        # saved to session.state
+)
+code_reviewer_agent = LlmAgent(
+    name="CodeReviewerAgent",
+    instruction="Review:\n```python\n{generated_code}\n```",  # read from state
+    output_key="review_comments",
+)
+code_refactorer_agent = LlmAgent(
+    name="CodeRefactorerAgent",
+    instruction="Refactor {generated_code} based on {review_comments}",
+)
+root_agent = SequentialAgent(
+    name="CodePipelineAgent",
+    sub_agents=[code_writer_agent, code_reviewer_agent, code_refactorer_agent],
+)
+```
 
-Google ADK's placement in ④a (confirmed) combined with AgentScope's placement in ④a (also confirmed) means:
+Data flow is `session.state` via `output_key` and `{variable_name}` template injection in instructions. The connection is string interpolation, not typed.
 
-- **All four major "code-first Agent frameworks"** (Mastra, Google ADK, AgentScope, LangGraph's `create_react_agent`) are ReAct-based
-- The ④b (P&E school) category has **zero verified public representatives**
-- The gap between "framework you can `pip install`" and "production P&E system like the user's Agent 2.0" is **wider than originally thought**
+### Example 2: LLM Triage + Parallel Execution
 
-This is a significant finding. It means when someone looks for a framework to build a production Agent system with cost predictability, audit, and Plan-artifact-based control, they will find:
-- Plenty of ReAct frameworks (③ ④a)
-- Zero P&E frameworks
-- And will therefore have to build custom (⑤)
+From `contributing/samples/workflow_triage/` — the LLM decides which workers to run, Python orchestration executes them:
 
-The user's Agent 2.0 is not "a slightly different architecture from the mainstream" — it is **filling a gap in the public framework landscape**.
+```python
+# LLM decides which workers are needed
+root_agent = Agent(
+    instruction="Analyze input. Call update_execution_plan with relevant workers.",
+    tools=[update_execution_plan],   # stores ["code_agent", "math_agent"] to state
+    sub_agents=[plan_execution_agent],
+)
 
-## TODO
+# Python orchestration executes in parallel, then summarizes
+plan_execution_agent = SequentialAgent(sub_agents=[
+    ParallelAgent(sub_agents=[code_agent, math_agent]),  # parallel execution
+    execution_summary_agent,                              # reads outputs from state
+])
+```
 
-- [ ] Source-level analysis (check `src/google/adk/agents/base_agent.py` and `runtime/*.py`)
-- [ ] Compare `LoopAgent` implementation to Mastra's `.dowhile()` at the source level
-- [ ] Check if there is any hidden P&E-like structure in ADK's upcoming roadmap
+Workers use `before_agent_callback` to skip if not in `execution_agents` state list. This pattern separates the "what to do" (LLM triage) from the "how to execute" (Python orchestration) — but the "plan" here is just a string list in state, not a structured typed plan artifact.
+
+---
+
+## 9. Position on the Agent Architecture Spectrum
+
+**Google ADK is ④a. It is not ④b. Four source-code proofs:**
+
+**Proof 1 — Main loop is ReAct** (`base_llm_flow.py:797-810`): `while True: LLM call → tool calls → repeat`. There is no pre-execution planning phase before this loop, no plan generation step before iteration begins.
+
+**Proof 2 — `PlanReActPlanner` is prompt engineering** (`plan_re_act_planner.py:153-210`): the planner injects a system-prompt instruction asking the LLM to format its output with `/*PLANNING*/` tags. It runs as a `BaseLlmRequestProcessor` inside `SingleFlow`'s processor list (`_nl_planning.py:39-65`) — the same processor list that handles instructions and tool declarations. It modifies the LLM's response format, not the execution architecture.
+
+**Proof 3 — Workflow agents are Python control flow** (`sequential_agent.py:67-88`, `loop_agent.py:82-115`): `SequentialAgent` is a Python for-loop, `LoopAgent` is a Python while-loop. No LLM is consulted for orchestration decisions. These are composition primitives, not plan executors.
+
+**Proof 4 — No structured Plan type exists**: a codebase-wide search finds zero classes named `Plan`, `PlanStep`, `ExecutionPlan`, or `PlanExecutor`. The `workflow_triage` example stores a `list[str]` of agent names in `session.state` as its "plan" — an untyped string list is not a structured plan.
+
+**On the LangGraphAgent curiosity**: `langgraph_agent.py:52` describes itself as "Currently a concept implementation." It wraps a compiled LangGraph `CompiledGraph` as a `BaseAgent` and calls `graph.invoke()` synchronously. This is an adapter/integration, not a signal about ADK's own execution model. It is not exported from `agents/__init__.py` and is not part of the standard agent suite.
+
+---
+
+## Key Architectural Insights
+
+1. **Two execution layers**: ADK's architecture is clean at the layer boundary. Inner layer: `BaseLlmFlow.run_async()` — the ReAct loop for one LLM agent. Outer layer: `SequentialAgent` / `LoopAgent` / `ParallelAgent` — Python orchestration composing multiple inner loops. Mastra has the same two layers (agentic-loop inner / Workflow DAG outer), with ADK's outer layer being less general but structurally equivalent.
+
+2. **`transfer_to_agent` vs. `AgentTool` is a significant design choice**: ADK offers both context-preserving handoff (`transfer_to_agent`) and context-discarding delegation (`AgentTool`). Mastra only offers the context-discarding pattern. The existence of `transfer_to_agent` in ADK is architecturally superior for observability but is LLM-driven routing, not structured planning.
+
+3. **`PlanReActPlanner` is the closest ADK gets to ④b and does not cross**: it enforces a planning-first structure within single LLM responses, enables re-planning, and marks planning text as non-visible. But the same `while True` ReAct loop runs before and after enabling this planner. The planner is an add-on, not an architectural foundation.
+
+4. **Safety gap: no default `maxSteps` on `LlmAgent`**: `LlmAgent` has no built-in step limit. Mastra defaults to `stepCountIs(5)`. ADK relies entirely on the LLM emitting a final response. This is a production reliability concern — a misbehaving agent can loop indefinitely unless `LoopAgent.max_iterations` wraps it.
+
+5. **Pydantic validates structure, not dataflow**: ADK's use of Pydantic is thorough for framework objects (`Agent`, `Event`, `EventActions`, `LlmRequest`) but absent at the `session.state` level where runtime data flows. The gap between the well-typed scaffolding and the untyped state bus is the key structural weakness for production reliability.
+
+6. **`LangGraphAgent` signals integration intent**: Google intends ADK to be an integration hub. The existence of a LangGraph adapter suggests ADK sees LangGraph as a peer in the ecosystem, not a competitor's architecture to copy. ADK's own execution model remains independent.
+
+---
+
+## Conclusion
+
+Google ADK is a well-engineered, production-quality ReAct framework. Its execution model is `while True: LLM call → tools → repeat`, with Python orchestration primitives (`SequentialAgent`, `LoopAgent`, `ParallelAgent`) composing multiple agents at the outer level. The `PlanReActPlanner` adds planning-flavored prompt engineering but does not change the execution architecture.
+
+**Google ADK is ④a (Code Framework, ReAct school), not ④b.**
+
+ADK's `transfer_to_agent` mechanism is architecturally better than Mastra's tool-based handoff for multi-agent observability. Its `PlanReActPlanner` is more sophisticated than anything Mastra offers for planning-like behavior. But neither feature crosses the line into a true Plan-and-Execute architecture with a typed plan artifact, structural phase separation, or pre-execution cost estimation.
+
+The ④b category (P&E code framework) remains empty in the public ecosystem. Google ADK confirms, at source level, that the gap between "the best public framework" and "a true P&E + typed dataflow production system" is architectural, not just cosmetic.

@@ -1,0 +1,18 @@
+[submodule "google-adk"]
+	path = google-adk
+	url = git@github.com:google/adk-python.git
+[submodule "agentscope"]
+	path = agentscope
+	url = git@github.com:agentscope-ai/agentscope.git
+[submodule "pydantic-ai"]
+	path = pydantic-ai
+	url = git@github.com:pydantic/pydantic-ai.git
+[submodule "langgraph"]
+	path = langgraph
+	url = git@github.com:langchain-ai/langgraph.git
+[submodule "langchain"]
+	path = langchain
+	url = git@github.com:langchain-ai/langchain.git
+[submodule "crewai"]
+	path = crewai
+	url = git@github.com:crewAIInc/crewAI.git
