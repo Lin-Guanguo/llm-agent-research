@@ -382,25 +382,33 @@ Account: 小红书 "AI 观果"
 - ✅ **§六 6.2 改名为"Cognition + MAST 的双重证据"**，保留核心内容但不再用 Multi→Single 框架
 - ✅ 其他所有历史事实、数据、时间线都不变
 
-## 待求证项（Pending）
+## 求证结果（2026-04-12，详见 `platform-verification.md`）
 
-### 🔴 必须求证才能定稿的
+### ✅ 已求证通过，直接采用
 
-1. **第二类（Agent 编排平台）的所有国内产品**
-  - 百度的产品名：**是 AppBuilder? 插件库? 灵境矩阵? 妙搭? 还是其他？** 用户明确要求求证这个
-  - 腾讯元器：是否真实存在，正确产品名和发布时间
-  - 火山引擎 AgentKit：是否真实存在，正确产品名
-  - 阿里百炼 Visual Studio：是否这个名字准确，或者应该叫别的
-  - 用户明确表达："我压根没听过的，怀疑是幻觉"
-2. **Multi 时期具体框架的定位**
-  - MetaGPT 具体是什么时间、什么论文、什么定位
-  - AutoGen 的 2023-08 论文和 2023-09 开源的准确时间
-  - CrewAI 的开源时间 2023-11-14 和商业化 2024-10
-3. **Cognition Flappy Bird 例子的准确原文**
-  - Walden Yan 博客里描述的原始例子，要引用准确
+- **Dify**：2023-04-12 GitHub 创建，137k+ stars（实测 137,260）
+- **扣子 Coze**：国内版 coze.cn 2024-02-01，海外版 2023-12
+- **腾讯元器**：2024-05-17 上线（⚠️ 不要和腾讯元宝混淆——后者是 C 端聊天 App）
+- **百度产品家族**：灵境矩阵 (2023-09) → 文心智能体平台 AgentBuilder (2024-04-16 改名升级) + 千帆 AppBuilder (2023-12-20 企业级)
+- **阿里云百炼 (Bailian / Model Studio)**：含 AgentScope SDK
+- **FastGPT**：2023-02 创建，27k+ stars
+- **Anthropic Building Effective Agents**：2024-12-19, Erik Schluntz + Barry Zhang
+- **LangChain plan_and_execute 博客**：2023-05-10
+- **Cognition Don't Build Multi-Agents**：2025-06-12 by Walden Yan，Flappy Bird 原文已抓取
+- **MAST 论文**：2025-03-17, Berkeley + Cornell, arXiv:2503.13657
+- **BabyAGI 架构**：三个子 agent + Pinecone + P&E 任务队列，全部正确
+- **AutoGPT**：thoughts JSON 字段正确，改为"ReAct-style"更准
 
-### 🟡 建议求证但不阻塞定稿
+### ❌ 已从博客里移除
 
-1. LangChain 2023-05 P&E 博客原文的准确引用位置
-2. Anthropic *Building Effective Agents* 博客的准确日期和作者（2024-12-19 by Schluntz + Zhang）
+- ~~"阿里百炼 Visual Studio"~~ —— 不是产品名，改为"阿里云百炼 (Bailian / Model Studio)"
+- ~~"ModelStudio-ADK"~~ —— 媒体造词，删除
+- ~~火山引擎 AgentKit 作为第二类产品~~ —— 它是基础设施层（类似 AWS Bedrock AgentCore），移到"不属于这一类"说明栏
+- ~~"妙搭"~~ —— 是"秒哒 MiaoDa"的错字，而且它是应用生成器不是 agent 平台，不进博客
+
+### 🟢 求证过程中的加分收获
+
+1. **百度产品的历史演变链**：灵境矩阵 → 文心大模型智能体平台 → 文心智能体平台 AgentBuilder——这个改名史本身很有故事
+2. **腾讯元器 vs 腾讯元宝** 是常见混淆点，博客里可以一句话提醒
+3. **Cognition Flappy Bird 原文已抓取**，正文起草时可以直接引用
 
