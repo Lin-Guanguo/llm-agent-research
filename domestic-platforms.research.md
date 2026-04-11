@@ -158,52 +158,59 @@ Notably, this is different from Lilian Weng's canonical definition. There is **n
 
 ---
 
-## 3. Alibaba Bailian (Alibaba Cloud Model Studio)
+## 3. Alibaba Bailian (Alibaba Cloud Model Studio) + AgentScope
+
+> **Correction note (2026-04-11)**: The original version of this section claimed Alibaba has a high-code framework called "ModelStudio-ADK" that supports Plan-and-Execute. Direct verification against AgentScope's GitHub README showed: (1) "ModelStudio-ADK" is a media term (36kr, InfoQ), not an official Alibaba product name; (2) AgentScope is ReAct-based, not P&E. This section has been rewritten.
 
 ### Product Positioning
 
 Alibaba Cloud's strategy: "Provide the soil where real AI Agents can grow." Attempting to upgrade from "model provider" to "full Agent development stack."
 
-### Two-Tier Strategy
+### Actual Product Split (verified)
 
-Unlike all other platforms in this survey, Alibaba explicitly provides **two separate products** for two different user profiles:
+Alibaba does genuinely offer two distinct products for two different user profiles, which is more than most Chinese vendors do:
 
-| Tier | Product | Target User | Nature |
-|------|---------|-------------|--------|
-| **Low-code** | Visual Studio (drag-and-drop) | Non-developers | Visual workflow builder |
-| **High-code** | ModelStudio-ADK / AgentScope | Developers | **Real Agent framework with Plan-and-Execute** |
+| Tier | Product | Target User | Nature | Category |
+|------|---------|-------------|--------|----------|
+| **Low-code** | Bailian Visual Studio (drag-and-drop) | Non-developers | Visual workflow builder | ③ |
+| **Open-source code framework** | **AgentScope** (`github.com/agentscope-ai/agentscope`, 23.4k ⭐) | Developers | ReAct agent framework from Tongyi Lab | **④a** (not ④b) |
 
-This two-tier split is the **clearest public statement from any Chinese Agent vendor that "Agent platform" and "Agent framework" are different products solving different problems**.
+**Also exists**: `alibabacloud-bailian-go-sdk` (Go REST API client for Bailian). This is a plain HTTP client, not an Agent framework.
 
-### ADK Framework Features (high-code, 2024)
+### AgentScope's Real Execution Model
 
-Characteristics that distinguish it from the low-code Visual Studio:
+**Verification source**: Direct WebFetch of `github.com/agentscope-ai/agentscope` README (accessed 2026-04-11).
 
-| Feature | Description |
-|------|------|
-| **Autonomous planning** | Agent can decompose complex tasks, dynamically adjust strategy |
-| **Multi-turn reflection** | Loop execution, result feedback, self-correction |
-| **Tool calling** | 200+ model APIs, knowledge bases, databases, sandboxes |
-| **Memory management** | Short-term context + long-term knowledge base |
-| **Observability** | Full-link logging, cost tracing, auditing |
-| **Dynamic reasoning** | Based on Qwen3 with 90% decision success rate |
+The README states: *"AgentScope is a production-ready, easy-to-use agent framework... built-in **ReAct agent**."*
 
-### Execution Model
+- The "Hello AgentScope" example uses `ReActAgent` as the primary primitive
+- There is a "Meta Planner Agent" as an optional example pattern, but it is not the core execution model
+- **Plan is an optional tool, not a first-class framework primitive**
 
-Based on the open-source AgentScope framework, ADK supports:
-- **Plan-and-Execute mode** (plan first, then execute)
-- **ReAct loop**
-- **Multi-Agent collaboration**
+**Conclusion**: AgentScope belongs in ④a (ReAct-based code framework), alongside Mastra, Google ADK, and LangGraph. It is not in ④b.
+
+### What "ModelStudio-ADK" Actually Is
+
+This name appears in two tech-blog articles:
+- [36kr: 高代码时代来临](https://eu.36kr.com/zh/p/3484631535033224)
+- [InfoQ: 面向 Agent 的全栈能力体系](https://www.infoq.cn/article/ya6zml7irki6ph3c56hr)
+
+Neither Alibaba's official Bailian product page nor AgentScope's README uses this term. The media coined it by analogy to Google's Agent Development Kit. When we asked "what is the high-code layer of Bailian?", the answer is: **it's AgentScope**, which is ReAct-based.
 
 ### Alibaba's Definition of "Agent"
 
-Official emphasis: Agent = **Autonomous Decision-Making + Dynamic Reflection + Loop Execution**. This is the most ambitious Chinese vendor statement, closest to the Lilian Weng canonical definition and directly parallel to "Coding Agent"-style autonomous execution.
+Based on AgentScope's README: Agent = **LLM + ReAct loop + tool use + memory + optional planner agent**. This is compatible with Lilian Weng's definition but in the **ReAct execution model**, not P&E.
 
-### Key Finding
+### Key Finding (corrected)
 
-**Alibaba is the only Chinese vendor that openly distinguishes "workflow application platform" from "autonomous Agent framework."** The Visual Studio serves enterprise buyers needing controllable workflow + AI nodes; the ADK serves development teams building real autonomous systems. This is the most honest product positioning in the Chinese Agent ecosystem.
+**Alibaba's contribution is real but was mischaracterized.** Alibaba genuinely offers two distinct products for two user profiles (Visual Studio for non-developers, AgentScope for developers) — something Coze and Tencent Yuanqi don't do. However:
 
-**Note for future research**: ADK / AgentScope deserves a dedicated source-level analysis — planned as `alibaba-adk.research.md`.
+- ✅ Alibaba has a real open-source code framework (AgentScope, 23.4k stars, actively maintained)
+- ❌ AgentScope is NOT a P&E framework
+- ❌ "ModelStudio-ADK" is not a real product name
+- ❌ Alibaba is NOT "the only Chinese vendor with a ④b framework" — no public ④b framework has been verified, Chinese or otherwise
+
+**The honest statement**: Alibaba's AgentScope is a solid ReAct-based framework (④a), comparable to Google ADK and Mastra. The ④b slot remains empty in the public open-source landscape.
 
 ---
 
@@ -358,7 +365,7 @@ Technology productization + capability servitization + scenario industrializatio
 - Let the LLM choose **within predefined node boundaries**
 - Not let the LLM **re-plan the task flow itself**
 
-**Only Alibaba ADK is an exception**: Plan-and-Execute mode is provided, allowing the Agent to make arbitrary decisions at the code level — but this requires developer programming ability.
+**No exception**: Even Alibaba's AgentScope (originally miscategorized here as "Alibaba ADK, a P&E framework") is, on direct README verification, ReAct-based. No public Chinese open-source framework has been verified as P&E-primary.
 
 ### Finding 3: All use cases are in the "workflow" category
 
@@ -381,9 +388,9 @@ Actual applications (from survey data):
 | **Alibaba Bailian** | Enterprise full-stack | Large enterprise + deep dev | Dual strategy (low-code + high-code) |
 
 **Selection logic**:
-- Want fast onboarding + community support → Dify
-- Want publishing to WeChat/QQ, social ecosystem integration → Coze
-- Want to build real autonomous Agent systems + have dev team → Alibaba ADK
+- Want fast onboarding + community support → Dify (③)
+- Want publishing to WeChat/QQ, social ecosystem integration → Coze (③)
+- Want a code-first framework with a real ReAct loop + dev team → AgentScope (④a) or Mastra / Google ADK
 
 ### Finding 5: Workflow vs Agent distinction is systemically ignored
 
@@ -430,7 +437,7 @@ In most Chinese platforms, "Agent planning" is in reality **a flow that a human 
 - **Cost & time**: High (but resolves complex problems in one go)
 - **Use cases**: Code writing, bug fixing, small feature development
 
-### Chinese Agent Platforms (Dify / Coze / Alibaba ADK)
+### Chinese Agent Platforms (Dify / Coze / AgentScope)
 - **Design goal**: Provide application development tools
 - **Execution model**: Human designs flow → LLM makes choices within nodes
 - **UX**: Need to configure flow, but LLM also participates in decisions
@@ -451,15 +458,16 @@ In most Chinese platforms, "Agent planning" is in reality **a flow that a human 
 
 ## Position on the Agent Architecture Spectrum
 
-From the `summary.md` taxonomy, these platforms map as follows:
+From the `summary.md` taxonomy, these platforms map as follows (corrected):
 
 | Category | Chinese Platforms |
 |---|---|
-| **③ Low-Code Workflow Platform** | Dify, Coze, Yuanqi, FastGPT, Baidu AppBuilder, Alibaba Visual Studio |
-| **④b Code Framework (P&E school)** | **Alibaba ADK / AgentScope** — the only Chinese representative |
+| **③ Low-Code Workflow Platform** | Dify, Coze, Yuanqi, FastGPT, Baidu AppBuilder, Alibaba Bailian Visual Studio |
+| **④a Code Framework (ReAct school)** | **AgentScope** (Alibaba Tongyi Lab, 23.4k ⭐) |
+| **④b Code Framework (P&E school)** | ⚠️ No verified Chinese (or non-Chinese) public representative |
 | **Infrastructure (not a platform)** | Volcengine AgentKit |
 
-The absence of any Chinese representative from category ④a (ReAct-based code framework like Mastra or LangGraph) is worth noting. The domestic ecosystem skipped directly from visual workflow (③) to P&E code framework (④b), while the Western ecosystem has strong representation in ④a.
+**Corrected observation**: The Chinese ecosystem is well-represented in ③ (many products) and has one strong entry in ④a (AgentScope). There is no verified Chinese entry in ④b — but neither is there any verified non-Chinese entry. The ④b category is empty across the entire public open-source landscape as of 2026-04, and is likely only inhabited by proprietary enterprise production systems.
 
 ---
 

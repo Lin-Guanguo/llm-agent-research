@@ -1,8 +1,10 @@
 # Cross-Project Findings
 
-Last Updated: 2026-04-11
+Last Updated: 2026-04-11 (corrected)
 
 Findings that span multiple categories of Agent architecture research. Each finding cites the project(s) it was derived from.
+
+> **Correction history (2026-04-11)**: Finding 7 originally claimed Alibaba Bailian had a Plan-and-Execute code framework called "ADK / AgentScope." Direct GitHub verification showed: (a) Alibaba's actual open-source framework is AgentScope, not "ADK"; (b) "ModelStudio-ADK" was a media-only term from 36kr/InfoQ tech articles, not an official Alibaba product name; (c) AgentScope's README clearly states it uses ReAct as the core execution model, not P&E. Finding 7 has been rewritten. A new Finding 8 captures the corrected conclusion that the ④b P&E category is empty in public open source.
 
 ---
 
@@ -97,24 +99,57 @@ Only **compile-time flow-level typing** (tracking what data is available at each
 
 ---
 
-## Finding 7: Alibaba Bailian is the only Chinese platform that explicitly separates "workflow Agent" from "autonomous Agent"
+## Finding 7: Alibaba Bailian provides two separate products (low-code + code framework), but both are still ReAct-philosophy
 
-Most Chinese platforms conflate Workflow and Agent (calling their workflow-with-LLM-nodes product an "Agent"). **Alibaba Bailian is the only one that draws an explicit line:**
+Alibaba Bailian genuinely does offer two distinct products for two user profiles, which most Chinese vendors don't:
 
-- **Visual Studio (low-code layer)** — called what it is: a visual workflow builder
-- **ADK / AgentScope (high-code layer)** — called what it is: an Agent framework supporting Plan-and-Execute and autonomous decision-making
+- **Bailian Visual Studio (low-code)** — a drag-and-drop workflow builder aimed at non-developers. Sits in ③.
+- **AgentScope (open-source code framework)** — the actual open-source framework from Tongyi Lab (`github.com/agentscope-ai/agentscope`, 23.4k ⭐). Aimed at developers.
 
-This makes Alibaba's positioning **the clearest public statement** from the Chinese ecosystem that these are two different products solving two different problems.
+**Previously claimed (incorrect)**: That the code framework is "Plan-and-Execute," making Alibaba the only Chinese vendor with a ④b framework.
 
-**Evidence**: `domestic-platforms.research.md` section 3 (Alibaba Bailian)
+**Actually true (verified against AgentScope README)**: AgentScope is explicitly built around **ReAct** as its core primitive. The README's "Hello AgentScope" example uses `ReActAgent`. There is a "Meta Planner Agent" as an optional/example pattern, but it is not the core execution model. **AgentScope belongs in ④a, not ④b.**
 
-**Implication**: Alibaba ADK / AgentScope deserves dedicated research (planned: `alibaba-adk.research.md`) because it is the clearest ④b candidate we've identified in the Chinese ecosystem.
+**Also incorrect**: The name "ModelStudio-ADK" is not used in AgentScope's README or Alibaba Cloud's official product documentation. It appeared in secondary-source tech articles (36kr, InfoQ) and was picked up as if it were an official product name. The correct reference is "AgentScope" or "Alibaba Bailian's open-source code framework."
+
+**Evidence**: Direct WebFetch of `github.com/agentscope-ai/agentscope` README (2026-04-11). The framework's executive summary says: "AgentScope is a production-ready, easy-to-use agent framework... built-in ReAct agent."
+
+**Corrected implication**: Alibaba does offer a more thoughtful product split than Coze or Dify (low-code + real code framework), but it is not a representative of ④b. The ④b slot still has no verified Chinese public representative.
+
+---
+
+## Finding 8: Category ④b (P&E code framework) is empty in the public open-source landscape
+
+After direct verification of the candidate frameworks, **no publicly-maintained, open-source Agent framework ships with Plan-and-Execute as its primary architectural primitive**.
+
+**Verified by direct README/README-adjacent source inspection**:
+
+| Framework | Stars | Verified execution model | Category |
+|---|---|---|---|
+| Mastra | (from `mastra.research.md`) | Pure ReAct + Workflow DAG overlay | ④a |
+| Google ADK (`google/adk-python`) | 18.9k | Pure ReAct + Sequential/Parallel/LoopAgent orchestration | ④a |
+| AgentScope (`agentscope-ai/agentscope`) | 23.4k | Built-in ReAct, Plan is optional example | ④a |
+| LangChain `plan-and-execute` | (deprecated) | — | ❌ removed from LangChain ecosystem |
+
+**Also relevant (not yet verified but expected to be ④a)**: LangGraph, Vercel AI SDK, CrewAI, AutoGen.
+
+**What this means**:
+
+- Plan-and-Execute as a paradigm exists in academic papers (ReWOO, LLMCompiler, Plan-then-Execute arxiv 2509.08646)
+- But no one has packaged it into a well-maintained, adoptable open-source framework
+- LangChain tried and **deprecated** its implementation
+- Every major framework that might have been ④b turned out to be ReAct-based when checked against its actual README
+
+**Implication for the user's blog**: The "I'm doing Plan-and-Execute in production" story is not "rare compared to one or two other frameworks" — it is "rare compared to nothing else verifiable in public." This significantly sharpens the blog's central argument.
+
+**Caveat**: We have not yet exhaustively searched for vertical-domain P&E frameworks (e.g., for medical, legal, or financial agents). The "empty" claim applies to general-purpose public open source. There may be proprietary enterprise systems (like the user's) that also do P&E but are not visible to this research.
 
 ---
 
 ## Open Questions (Become Findings When Answered)
 
-- **Q1**: Is Google ADK in category ④a or ④b? Depends on whether `github.com/google/adk-python` exposes Plan-and-Execute primitives at the top level.
-- **Q2**: Does LangGraph's prebuilt `create_react_agent` define what "most people using LangGraph" actually do, or is it a minor API surface? If it dominates usage, LangGraph is effectively ④a.
-- **Q3**: Is there any production ④b framework (not research) that has shipped to multiple enterprise customers? If yes, the "④b is rare" finding needs updating.
-- **Q4**: What happens when a ④a framework adds a Plan layer? Does it become ④b, or does the Plan become just another Workflow Step?
+- ~~**Q1**: Is Google ADK in category ④a or ④b?~~ — **Answered**: ④a (see `google-adk.research.md`).
+- **Q2**: Does LangGraph's prebuilt `create_react_agent` define what "most people using LangGraph" actually do, or is it a minor API surface? If it dominates usage, LangGraph is effectively ④a even if its lower-level graph primitives could theoretically support P&E.
+- **Q3**: Is there ANY public open-source P&E framework that is (a) maintained, (b) has Plan as a first-class primitive, and (c) is general-purpose? Exhaustive search not yet conducted. Academic implementations of ReWOO / LLMCompiler / Plan-then-Execute should be looked at.
+- **Q4**: What happens when a ④a framework adds a Plan layer as an example? Does this turn it into ④b? (Answer: probably not — Plan-as-example is different from Plan-as-primitive. AgentScope's Meta Planner pattern is the test case.)
+- **Q5**: Is there a ⑥ archetype we haven't seen yet? Research hasn't covered the "agent OS" direction (MemGPT-style or Letta-style systems that blur memory and control flow).
