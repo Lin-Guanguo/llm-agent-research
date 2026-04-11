@@ -1,10 +1,12 @@
 # LLM Agent Architecture — Research Synthesis
 
-Last Updated: 2026-04-11 (corrected)
+Last Updated: 2026-04-12 (final after 6 source-level framework analyses)
 
 Central question: **"What is an Agent?"** — specifically, who controls the flow of execution, and how the answer to that question separates the ecosystem into distinct architectural families.
 
-> **Correction history**: An initial version of this map placed "Alibaba ADK / AgentScope" in category ④b (P&E code framework) based on secondary-source media articles. Direct verification against AgentScope's GitHub README and Google ADK's GitHub README showed both are ReAct-based (④a), not P&E. The ④b slot is now marked as empty — no verified public open-source P&E code framework has been found.
+> **Research completion note (2026-04-12)**: Six frameworks have now been analyzed at source-code level with file:line citations: Mastra, Google ADK, AgentScope, Pydantic AI, LangGraph, LangChain, and CrewAI. The biggest update to the working taxonomy: **④b is not empty**. CrewAI's `src/crewai/experimental/agent_executor.py` is a genuine Plan-and-Execute implementation extending `Flow[AgentExecutorState]` with typed `TodoList`, isolated `StepExecutor`, and `PlannerObserver` — explicitly citing arxiv 2503.09572 (Plan-and-Act). However, ④b exists **only in experimental / middleware / historical forms** across all major frameworks. The industry pattern is: evaluate P&E → classify as experimental or middleware → keep ReAct as the default production recommendation. The user's ⑤ remains distinctive not because P&E is a novel concept but because making P&E + typed dataflow the **default production architecture** is a path the rest of the industry has deliberately stepped away from.
+
+> **Correction history**: An initial version placed "Alibaba ADK / AgentScope" in ④b based on media articles. Direct README verification showed AgentScope is ReAct-based. Source-level analysis later refined this: AgentScope has genuine `Plan`/`SubTask` Pydantic models (closest ④a to ④b), but execution is ReAct. "ModelStudio-ADK" was a media term, not an official product name.
 
 ---
 
@@ -17,11 +19,16 @@ All currently-observed Agent systems fall into one of these categories, distingu
 | ① | **Coding CLI Agent** | Claude Code, Codex, Cursor, Aider | LLM in ReAct loop | None | Tool API shape |
 | ② | **Cloud Autonomous Agent** | Manus, Devin, Claude Co-worker, GenSpark | LLM in ReAct loop (sandboxed) | None | Same as ① |
 | ③ | **Low-Code Workflow Platform** | Dify, Coze, Yuanqi, FastGPT, Baidu AppBuilder, Alibaba Bailian Visual Studio | **Human-drawn workflow**, LLM at nodes | None | Node boundary schemas |
-| ④a | **Code Framework (ReAct school)** | Mastra, LangGraph, Vercel AI SDK, **Google ADK** (18.9k ⭐), **AgentScope** (23.4k ⭐, Alibaba Tongyi Lab) | **Developer code** wraps Workflow/graph; LLM in Step-level ReAct | None | Zod/Pydantic boundary schemas + middleware |
-| ④b | **Code Framework (P&E school)** | ⚠️ **No verified public open-source framework found.** Candidates expected but unverified: LangGraph's graph primitives *could* be used in P&E style, but its dominant prebuilt is `create_react_agent` (i.e., ④a by default) | (would be: developer code with structured Plan artifact + separate Execute phase) | (would be: Yes) | (would be: framework built-in) |
-| ⑤ | **Custom Production System** | Personal Agent 2.0 (P&E + typed dataflow) | Structured Plan layer + typed flow + per-capability gating | **Yes, first-class artifact** | Flow-level types |
+| ④a | **Code Framework (ReAct school)** | Mastra, Google ADK (18.9k ⭐), AgentScope (23.4k ⭐), Pydantic AI, LangGraph (`create_agent`), LangChain 1.0, Vercel AI SDK, CrewAI default | **Developer code** wraps Workflow/graph; LLM in Step-level ReAct | None | Zod/Pydantic boundary schemas + middleware |
+| ④b | **Code Framework (P&E school) — experimental/middleware only** | **CrewAI `experimental/agent_executor.py`** (opt-in, extends `Flow[AgentExecutorState]`, cites arxiv 2503.09572), **LangChain `experimental.plan_and_execute`** (removed in 1.0), **LangGraph P&E tutorials** (redirected to `langchain/middleware/built-in#to-do-list`) | Pre-execution Plan generation + structured todo tracking + isolated step execution | **Yes, typed** | Framework built-in |
+| ⑤ | **Custom Production System — P&E + typed dataflow as default** | Personal Agent 2.0 | Structured Plan layer + typed flow + per-capability gating, production-default | **Yes, first-class artifact** | Flow-level types |
 
-**Key observation**: ① and ② are architecturally the same (differ only in deployment). ③ and ④a are philosophically the same (differ only in visual vs. code). ④b is empty in the public open-source landscape — **no verified framework ships with Plan-and-Execute as its primary architectural primitive**. This makes ⑤ (custom production systems with structured Plan artifacts) even rarer than originally assumed.
+**Key observations**:
+
+- **① and ②** are architecturally the same (differ only in deployment).
+- **③ and ④a** are philosophically the same (differ only in visual vs. code). Mastra is TypeScript Dify, Google ADK is Python Dify, AgentScope is Alibaba's Dify. The entire ④a category is "code-version of Dify."
+- **④b exists but is gated**: every major framework has evaluated P&E and classified it as experimental, middleware, or historical. The pattern is crystal clear across LangChain (dropped), LangGraph (relocated), CrewAI (experimental), AgentScope (plan as data but execution as ReAct).
+- **⑤ is distinctive not because P&E is rare** but because **making P&E + typed dataflow the default production architecture** is a path the industry has repeatedly explored and deliberately chosen not to promote.
 
 ## The Central Insight
 
@@ -63,9 +70,13 @@ See [findings.md](./findings.md) for the full list. Highlights:
 
 5. **Typed dataflow is not a common abstraction** — Mastra, LangGraph, and other ④a frameworks use runtime boundary validation (Zod schemas), but none provide flow-level type guarantees. The user's Agent 2.0 system appears to be rare in combining P&E with typed dataflow.
 
-6. **④b (P&E code framework) is empty in public open source** — After direct verification, AgentScope (Alibaba Tongyi Lab, 23.4k ⭐) and Google ADK (18.9k ⭐) are both ReAct-based (④a), not Plan-and-Execute. LangChain deprecated its own `plan-and-execute` implementation. No currently-maintained public framework ships with Plan-as-first-class-primitive. The "P&E code framework" category exists conceptually but has no verified representatives in the open-source ecosystem.
+6. **④b is not empty — it exists only in experimental / middleware / historical forms**: After source-level analysis of 6 frameworks, CrewAI's `src/crewai/experimental/agent_executor.py` was found to be a genuine Plan-and-Execute implementation (typed `TodoList`, isolated `StepExecutor`, `PlannerObserver`, citing arxiv 2503.09572). LangChain historically had `plan_and_execute` in `langchain_experimental` (dropped in 1.0). LangGraph's P&E tutorials have been redirected to `langchain/middleware/built-in#to-do-list`. AgentScope has `Plan`/`SubTask` Pydantic models but executes via ReAct with plan-as-hint-injection. **Every major framework has evaluated P&E and classified it as experimental, middleware, or historical.**
 
-7. **Beware of media-sourced claims about framework architecture** — The earlier "Alibaba ADK supports Plan-and-Execute" claim came from tech-blog articles (36kr, InfoQ), not from Alibaba's official product documentation or AgentScope's README. Always verify framework claims against the actual README or source code. Media tends to conflate "supports planning as a feature" with "is a Plan-and-Execute framework" — these are different things.
+7. **The industry "experimental gating" pattern**: Across LangChain (experimental → dropped), LangGraph (tutorials → middleware), CrewAI (experimental/), AgentScope (data model only), there is a consistent pattern. P&E is explored, built to partial completeness, and then kept behind opt-in gates or relocated to a higher layer. The user's ⑤ (P&E as production default with typed dataflow) is not rare because the concept is novel — it is rare because **the industry has made P&E vs ReAct a settled decision**, and ReAct won as the default.
+
+8. **Beware of media-sourced claims**: The earlier "Alibaba ADK supports Plan-and-Execute" claim came from 36kr and InfoQ tech articles, not from Alibaba's official product documentation or AgentScope's README. Always verify framework claims against actual README or source code. Media tends to conflate "supports planning as a feature" with "is a Plan-and-Execute framework" — these are different things.
+
+9. **Multi-agent handoff trace loss is the most consistent anti-pattern**: Across Mastra (`AgentTool`), Google ADK (`AgentTool`), CrewAI (`DelegateWorkTool` returns plain `str`), Pydantic AI (agent-as-tool default), and AgentScope (sub-agent via tool), sub-agent delegation consistently returns only the final text output — intermediate reasoning is discarded. **This is exactly the failure mode Cognition's "Don't Build Multi-Agents" warned about.** Only Google ADK's `transfer_to_agent` (preserves full context via shared `InvocationContext`) avoids this. LangGraph's subgraph pattern avoids it via shared state channels.
 
 ## Cross-References to Other Research
 
