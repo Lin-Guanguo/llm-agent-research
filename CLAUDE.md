@@ -32,7 +32,7 @@ When a question involves "how does Agent X handle memory/context," check `llm-me
 
 ## Blog Output
 
-**Blogs are NOT written in this repo.** They are drafted in `~/dev/CyberMnema/timeline/YYYY/MM/W{n}/blog-<topic>-YYYY-MM-DD.md`, following the user's existing convention. This repo only holds research artifacts that blogs reference by path.
+Blogs are drafted at the root of this repo (e.g., `blog.md`), following the sister repo `llm-memory-research` convention. Once finalized, blogs may be renamed to `blog.N.chinese.md` matching the llm-memory-research numbering.
 
 ## What NOT to Put Here
 

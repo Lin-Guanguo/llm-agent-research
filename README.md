@@ -56,11 +56,11 @@ This repository grew out of Agent architecture research originally done in `Cybe
 
 ## Blog Output
 
-Blogs drafted from this research live in the user's main work directory `~/dev/CyberMnema/`, following the existing `blog-*.md` convention. This repo only holds research artifacts.
+Blogs drafted from this research live at the root of this repository, following the sister repo `llm-memory-research` convention (`blog.N.chinese.md`). The current working draft is in `blog.md`.
 
 | Blog | Location | Status |
 |------|----------|--------|
-| 到底什么是 Agent | `/Users/linguanguo/dev/CyberMnema/timeline/2026/04/W15/blog-到底什么是Agent-2026-04-11.md` | 📝 Outline ready, drafting next |
+| **Blog 1**: 当你在说开发 Agent 时，你到底在做什么？（盘点 + 分类 + 定调） | `./blog.md` | 📝 Outline ready, drafting next |
 
 ## Repository Structure
 
@@ -70,15 +70,23 @@ llm-agent-research/
 ├── CLAUDE.md                              # Instructions for Claude
 ├── summary.md                             # Full synthesis
 ├── findings.md                            # Cross-project findings
+├── blog.md                                # Current blog draft
 │
-├── mastra.research.md                     # Mastra agent architecture
-├── domestic-platforms.research.md         # Chinese platforms (7 products)
-├── google-adk.research.md                 # (planned)
-├── alibaba-adk.research.md                # (planned)
-├── langgraph.research.md                  # (planned)
-├── vercel-ai-sdk.research.md              # (planned)
-├── openai-assistants.research.md          # (planned)
-└── my-agent-2.0.research.md               # (planned)
+├── mastra.research.md                     # Mastra (source-level)
+├── google-adk.research.md                 # Google ADK (source-level)
+├── agentscope.research.md                 # AgentScope (source-level)
+├── pydantic-ai.research.md                # Pydantic AI (source-level)
+├── langgraph.research.md                  # LangGraph (source-level)
+├── langchain.research.md                  # LangChain (source-level)
+├── crewai.research.md                     # CrewAI (source-level)
+├── domestic-platforms.research.md         # Chinese platforms (public sources)
+│
+├── google-adk/                            # submodule, full clone
+├── agentscope/                            # submodule, full clone
+├── pydantic-ai/                           # submodule, full clone
+├── crewai/                                # submodule, full clone
+├── langgraph/                             # submodule, shallow --depth 1
+└── langchain/                             # submodule, shallow --depth 1
 ```
 
 ## License
