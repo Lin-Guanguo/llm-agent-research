@@ -67,12 +67,13 @@ Account: 小红书 "AI 观果"
 
 **② 2023-04 的双线爆发：AutoGPT vs BabyAGI** (~500 字) ⭐ 反直觉亮点
 
-- **AutoGPT (2023-03-30)** —— ReAct 的产品化，用 thoughts JSON 结构化输出（text/reasoning/plan/criticism/speak + command）
-- **BabyAGI (2023-04-01)** —— Plan-and-Execute 架构 + 任务队列，三个子 agent（execution / task-creation / prioritization）+ Pinecone 记忆
+- **AutoGPT (2023-03-30)** —— **ReAct 风格**的产品化，用 thoughts JSON 结构化输出（text / reasoning / plan / criticism / speak + command）。严格说它不是经典的 Thought/Action/Observation 格式，但行为是 ReAct 的
+- **BabyAGI (2023-04-01)** —— Plan-and-Execute 架构 + 任务队列，三个子 agent（execution / task_creation / prioritization）+ Pinecone 记忆
 - 两个项目前后 3 天内发布
-- **这是个反直觉的事实**：大部分人记得 AutoGPT，但忘了 BabyAGI。更少人知道这两个爆款的架构完全不同——一个是简单的 ReAct 循环，一个是先拆任务再执行的 Plan-and-Execute
+- **这是个反直觉的事实**：大部分人记得 AutoGPT，但忘了 BabyAGI。更少人知道这两个爆款的架构完全不同——一个是 ReAct 风格的循环，一个是先拆任务再执行的 Plan-and-Execute
 - **2023 年早期的 Agent 狂潮不是一种东西的爆发，是两种范式的同时登场**
 - 两者 reliability 都很差，狂热期持续到 2023 年中就冷却了
+- （插曲：BabyAGI 原 repo 2024-09 被归档为 functionz，历史代码保留在 `yoheinakajima/babyagi_archive`）
 
 **③ Devin 发布 (2024-03)** (~250 字)
 
@@ -113,27 +114,53 @@ Account: 小红书 "AI 观果"
 
 #### 按历史顺序列主流代表
 
-> ⚠️ **这一节需要求证**：下面列的平台和发布时间都需要 WebSearch 验证，特别是百度和腾讯的产品名可能有记错。
+> ✅ 本节所有产品名和日期已通过公开资料求证，详见 `platform-verification.md`
 
-**① Dify (2023-03 首次提交，2023-04 发布)**
+**① Dify (2023-04-12 GitHub 创建)**
 
-- 开源标杆，137k+ stars
-- 引擎 2024 年后拆成独立包 `graphon`
-- 执行模型是队列驱动的 worker pool
+- 开源标杆，**137k+ stars**（GitHub API 实测 2026-04）
+- 执行引擎 2024 年后拆成独立包 `graphon`——queue 驱动的 worker pool
+- 给开发者和 AI 创业者用，支持自部署
 
-**② 扣子 Coze (2024-02-01 国内版上线)** ⚠️ 日期确认
+**② 扣子 Coze (2024-02-01 国内版 coze.cn 上线)**
 
 - 字节跳动，**国内大众认知度最高**
-- 海外版 coze.com 略早（2023-12 底海外 beta）
+- 海外版 coze.com 稍早（2023-12 底海外 beta）
+- 目标用户：PM、运营、内容创作者
 - 发布到微信、QQ、飞书生态，深度绑定字节社交矩阵
+- 扣子官方原话（可引用）：**"规划是最难以工程化的，用工作流编排方式，但这与大模型的开放性产生本质冲突"**
 
-**③ 其他代表（待求证产品名称）**
+**③ 腾讯元器 (2024-05-17)**
 
-- **FastGPT** —— 专注知识库 + 工作流垂直场景
-- **腾讯元器** —— 基于混元大模型（需求证具体产品名和定位）
-- **百度 xxx** —— ⚠️ **用户点名怀疑**：可能叫 "AppBuilder"、"插件库"、"灵境矩阵"、"妙搭"，具体名字需求证
-- **阿里百炼 Visual Studio** —— ⚠️ 需求证这个是否是准确的产品名
-- **火山引擎 AgentKit** —— 字节云服务端（需求证）
+- 腾讯基于混元大模型的智能体搭建平台
+- 对标扣子 Coze
+- ⚠️ 注意区分：**不是"腾讯元宝"**（后者是 C 端聊天 App）
+
+**④ 百度：一个产品家族，按用户分层**
+
+百度的 agent 编排产品不是一个，而是**按用户分层的两个主产品** + 一个历史演变：
+
+- **历史**：灵境矩阵 (2023-09) → 文心大模型智能体平台 (2023-12) → **文心智能体平台 AgentBuilder** (2024-04-16 正式更名)
+- **文心智能体平台 AgentBuilder (2024-04)** —— **对标扣子的 C 端产品**，非开发者友好
+- **千帆 AppBuilder (2023-12-20 开放)** —— 百度智能云的**企业级** agent 开发工作台，面向开发者和企业
+- 这两个是**不同产品服务不同用户群**，不要混为一谈
+
+**⑤ 阿里云百炼 (Bailian / Model Studio)**
+
+- 阿里云的大模型与智能体开发平台
+- 集成阿里开源的 **AgentScope** 框架（通义实验室，23.4k stars）作为 SDK 层
+- ⚠️ 注意：**不叫 "Visual Studio"**，媒体曾经用过 "ModelStudio-ADK" 这种称呼但不是官方产品名
+
+**⑥ FastGPT (sealos/labring)**
+
+- 开源知识库 + 工作流平台，**27k+ stars**
+- 专注知识库 + 工作流垂直场景，不是通用 agent 平台
+- 2023-02 项目创建，2023 年中成熟
+
+#### 不属于这一类但经常被误放进来的
+
+- **火山引擎 AgentKit** —— 字节云服务端的云原生 agent 基础设施（8 模块的执行底座），对标 AWS Bedrock AgentCore。**不是可视化编排平台**，是**基础设施层**
+- **秒哒 MiaoDa** (百度) —— 2024-11 发布，零代码**应用生成器**（类 Lovable/v0），**不是 agent 编排平台**
 
 #### 这一档的共同特征
 
@@ -208,23 +235,29 @@ Account: 小红书 "AI 观果"
 #### 6.1 统一时间线表（跨三类一张表）
 
 
-| 年份         | Coding Agent                       | Agent 编排平台  | 代码框架                                                |
-| ---------- | ---------------------------------- | ----------- | --------------------------------------------------- |
-| 2022-10    | ReAct 论文                           | —           | LangChain v1                                        |
-| 2023-03    | —                                  | **Dify 发布** | —                                                   |
-| 2023-03/04 | AutoGPT (Single) + BabyAGI (Multi) | —           | —                                                   |
-| 2023-05    | —                                  | —           | LangChain `plan_and_execute`，官方承认 ReAct 有问题         |
-| 2023-08    | —                                  | —           | MetaGPT 论文                                          |
-| 2023-09    | —                                  | —           | AutoGen 开源                                          |
-| 2023-11    | —                                  | —           | CrewAI 开源                                           |
-| 2024-01    | —                                  | —           | LangGraph                                           |
-| 2024-02    | —                                  | **扣子国内版上线** | —                                                   |
-| 2024-03    | Devin                              | —           | —                                                   |
-| 2024 底     | Claude Code / Cursor 成熟            | —           | —                                                   |
-| 2024-10    | —                                  | —           | CrewAI 商业化                                          |
-| 2025-03    | —                                  | —           | **Berkeley + Cornell MAST 论文**                      |
-| 2025-06    | —                                  | —           | **Cognition "Don't Build Multi-Agents"**            |
-| 2025-10    | —                                  | —           | **LangChain 1.0** (create_react_agent 也 deprecated) |
+| 年份         | Coding Agent                     | Agent 编排平台                                       | 代码框架                                                |
+| ---------- | -------------------------------- | ------------------------------------------------ | --------------------------------------------------- |
+| 2022-10    | ReAct 论文                         | —                                                | LangChain v1                                        |
+| 2023-02    | —                                | FastGPT 项目创建                                     | —                                                   |
+| 2023-03/04 | AutoGPT + BabyAGI                | —                                                | —                                                   |
+| 2023-04    | —                                | **Dify 开源**                                     | —                                                   |
+| 2023-05    | —                                | —                                                | LangChain `plan_and_execute`，官方承认 ReAct 有问题         |
+| 2023-08    | —                                | —                                                | MetaGPT 论文                                          |
+| 2023-09    | —                                | **灵境矩阵**（百度文心一言插件生态平台）                         | AutoGen 开源                                          |
+| 2023-11    | —                                | —                                                | CrewAI 开源                                           |
+| 2023-12    | —                                | Coze 海外版 / **千帆 AppBuilder**                    | —                                                   |
+| 2024-01    | —                                | —                                                | LangGraph                                           |
+| 2024-02    | —                                | **扣子 coze.cn 国内版上线**                             | —                                                   |
+| 2024-03    | Devin                            | —                                                | —                                                   |
+| 2024-04    | —                                | **文心智能体平台 AgentBuilder**（灵境矩阵改名升级）               | —                                                   |
+| 2024-05    | —                                | **腾讯元器上线**                                       | —                                                   |
+| 2024 底     | Claude Code / Cursor 成熟          | —                                                | —                                                   |
+| 2024-10    | —                                | —                                                | CrewAI 商业化                                          |
+| 2024-12    | —                                | —                                                | Anthropic *Building Effective Agents*               |
+| 2025-03    | —                                | —                                                | **Berkeley + Cornell MAST 论文**                      |
+| 2025-06    | —                                | —                                                | **Cognition "Don't Build Multi-Agents"**            |
+| 2025-10    | —                                | —                                                | **LangChain 1.0** (create_react_agent 也 deprecated) |
+| 2026       | Manus / Claude Co-worker         | —                                                | —                                                   |
 | 2026       | Manus / Claude Co-worker           | —           | —                                                   |
 
 
