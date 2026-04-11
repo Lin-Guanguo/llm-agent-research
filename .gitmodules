@@ -16,3 +16,6 @@
 [submodule "crewai"]
 	path = crewai
 	url = git@github.com:crewAIInc/crewAI.git
+[submodule "dify"]
+	path = dify
+	url = git@github.com:langgenius/dify.git
