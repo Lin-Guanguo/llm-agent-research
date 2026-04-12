@@ -11,6 +11,8 @@ Status: Draft v3 (cover page added, §一+§二 merged)
 
 **本文探索**:2026 年「Agent 开发」这个词在中文互联网上至少在指三种完全不同的产品形态。本文把这三类分清楚——给每一类一个定义、几个主流代表、一段历史脉络。
 
+**关于 Workflow 和 Agent**:Anthropic 在 2024 年底的 *Building Effective Agents* 里给了一个被广泛引用的区分——**Workflow 是代码路径预定义的,LLM 只在某些节点决策;Agent 是 LLM 动态决定自己的流程和工具调用**。但到了 2026 年,这条线在实际产品里**正在变得模糊**。大多数代码框架(LangGraph、Mastra 等)的默认架构是「workflow 外层 + ReAct agent 内层」——整体由人画流程,但每个节点里 LLM 又在自主决策。编排平台(扣子、Dify)里的 LLM 节点也在做 agent 式的工具调用。**Workflow 和 Agent 在 2026 年的产品里不再是非此即彼,而是逐渐趋同**——它们更像一个连续光谱的两端,大部分产品都落在光谱中间。
+
 **核心结论**:
 
 1. **三种 Agent 开发**:**Coding Agent**(你直接用的,如 Claude Code、Manus)、**Agent 编排平台**(给业务人员 UI 拖节点,如扣子、Dify)、**Agent 代码框架**(给开发者写库,如 LangChain、Mastra)。它们服务不同的用户、走过不同的历史、用完全不同的技术栈
