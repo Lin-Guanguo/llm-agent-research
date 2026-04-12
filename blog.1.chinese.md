@@ -8,7 +8,7 @@ Last Updated: 2026-04-12
 
 ## 一、导言
 
-Anthropic 在 2024 年底的 *Building Effective Agents* 里给了一个被广泛引用的区分：**Workflow 是代码路径预定义的，LLM 只在某些节点决策；Agent 是 LLM 动态决定自己的流程和工具调用**。但到了 2026 年，这条线在实际产品里正在变得模糊——大多数代码框架的默认架构是「workflow 外层 + ReAct agent 内层」，编排平台里的 LLM 节点也在做 agent 式的工具调用。**Workflow 和 Agent 在 2026 年不再是非此即彼，而是逐渐趋同**。
+Anthropic 在 2024 年底的 *Building Effective Agents* 里给了一个被广泛引用的区分：**Workflow 是代码路径预定义的，LLM 只在某些节点决策；Agent 是 LLM 动态决定自己的流程和工具调用**。但到了 2026 年，这条线在实际产品里正在变得模糊——大多数代码框架的默认架构是「workflow 外层 + ReAct agent 内层」，编排平台里的 LLM 节点也在做 agent 式的工具调用。**Workflow 和 Agent 在 2026 年不再是非此即彼，而是逐渐融合**——甚至可以说，Agent 在吞噬 Workflow。当模型足够聪明之后，人工预设的编排到底是在帮忙还是在拖后腿？这个问题在 2026 年还没有定论，但趋势已经很明显了。
 
 这篇博客从**工程视角**讲三种 Agent 开发各自在做什么。我读了十几个 Agent 产品和框架的源码（包括 Claude Code、Codex、Gemini CLI、Cursor 等 Coding Agent 产品，以及 LangChain、LangGraph、Mastra、Google ADK、AgentScope、Pydantic AI、CrewAI、Dify 等框架和平台），下面的分析都基于这些一手调研。
 
