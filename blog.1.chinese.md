@@ -1,24 +1,17 @@
-# 当你开发 Agent 时，你在做什么？
-
-> 从工程视角看三种 Agent 开发模式
-
-Last Updated: 2026-04-12
-
+---
+title: "当你开发 Agent 时，你在做什么？"
+subtitle: "从工程视角看三种 Agent 开发模式"
 ---
 
-## 一、导言
+Anthropic 在 2024 年底的 *Building Effective Agents* 里区分了 Workflow 和 Agent：**Workflow 代码路径预定义；Agent 由 LLM 动态决定流程和工具调用**。到了 2026 年，这条线正在模糊——大多数框架默认「workflow 外层 + ReAct agent 内层」。**Workflow 和 Agent 正在融合，Agent 在吞噬 Workflow。**
 
-Anthropic 在 2024 年底的 *Building Effective Agents* 里给了一个被广泛引用的区分：**Workflow 是代码路径预定义的，LLM 只在某些节点决策；Agent 是 LLM 动态决定自己的流程和工具调用**。但到了 2026 年，这条线在实际产品里正在变得模糊——大多数代码框架的默认架构是「workflow 外层 + ReAct agent 内层」，编排平台里的 LLM 节点也在做 agent 式的工具调用。**Workflow 和 Agent 在 2026 年不再是非此即彼，而是逐渐融合**——甚至可以说，Agent 在吞噬 Workflow。当模型足够聪明之后，人工预设的编排到底是在帮忙还是在拖后腿？这个问题在 2026 年还没有定论，但趋势已经很明显了。
-
-这篇博客从**工程视角**讲三种 Agent 开发各自在做什么。我读了十几个 Agent 产品和框架的源码（包括 Claude Code、Codex、Gemini CLI、Cursor 等 Coding Agent 产品，以及 LangChain、LangGraph、Mastra、Google ADK、AgentScope、Pydantic AI、CrewAI、Dify 等框架和平台），下面的分析都基于这些一手调研。
+基于十几个产品和框架的源码调研（Claude Code、Codex、LangChain、LangGraph、Dify 等），从**工程视角**分析三种开发模式各自在做什么。
 
 **三种开发模式**：
 
-1. **低代码平台上的 Agent 开发**——非开发者在 UI 里拖节点搭 workflow，门槛最低
-2. **通用 Agent 开发（Single-Agent）**——一个 LLM 在 ReAct 循环里自决一切，Claude Code / Manus 就是这种
-3. **企业/领域 Agent 开发（Multi-Agent 编排）**——用 workflow 编排多个 agent 步骤，场景特化，可控性优先
-
-这三种模式用的底层技术可能完全一样（都能用 LangGraph），但**架构选择和工程挑战完全不同**。下面一个一个讲。
+1. **低代码平台**——拖节点搭 workflow，门槛最低
+2. **通用 Agent（Single-Agent）**——ReAct 循环自决一切
+3. **企业 Agent（Multi-Agent 编排）**——workflow 编排多步骤，可控性优先
 
 ---
 
