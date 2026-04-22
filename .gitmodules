@@ -19,3 +19,6 @@
 [submodule "dify"]
 	path = dify
 	url = git@github.com:langgenius/dify.git
+[submodule "deer-flow"]
+	path = deer-flow
+	url = git@github.com:bytedance/deer-flow.git

@@ -47,6 +47,7 @@ This repository grew out of Agent architecture research originally done in `Cybe
 |------|--------|--------|
 | [mastra.research.md](./mastra.research.md) | Mastra TS framework (agent architecture, not memory) | ✅ Done |
 | [domestic-platforms.research.md](./domestic-platforms.research.md) | 7 Chinese Agent platforms (Dify, Coze, Bailian, etc.) | ✅ Done |
+| [deer-flow.research.md](./deer-flow.research.md) | ByteDance DeerFlow 2.0 (`github.com/bytedance/deer-flow`, "super agent harness" on LangChain 1.0 `create_agent` + middleware) | ✅ Done |
 | `google-adk.research.md` | Google ADK Python (`github.com/google/adk-python`) | 📋 Planned |
 | `alibaba-adk.research.md` | Alibaba Bailian ADK / AgentScope | 📋 Planned |
 | `langgraph.research.md` | LangChain LangGraph | 📋 Planned |
