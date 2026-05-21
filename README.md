@@ -1,6 +1,6 @@
 # LLM Agent Architecture Research
 
-Last Updated: 2026-04-11
+Last Updated: 2026-05-19
 
 A systematic research project studying **Agent control-flow architectures** — how different frameworks, products, and platforms decide who controls execution (the LLM, the developer, or a visual workflow), and what that means for production systems.
 
@@ -53,7 +53,7 @@ This repository grew out of Agent architecture research originally done in `Cybe
 | `langgraph.research.md` | LangChain LangGraph | 📋 Planned |
 | `vercel-ai-sdk.research.md` | Vercel AI SDK | 📋 Planned |
 | `openai-assistants.research.md` | OpenAI Assistants/Responses API | 📋 Planned |
-| `my-agent-2.0.research.md` | Personal production system (P&E + typed dataflow) | 📋 Planned |
+| [my-agent-2.0.research.md](./my-agent-2.0.research.md) | Personal production system (P&E + typed dataflow) | ✅ Done |
 
 ## Blog Output
 
