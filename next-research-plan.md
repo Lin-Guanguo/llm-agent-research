@@ -1,6 +1,6 @@
 # Next Research Plan: Existing Agent Case Studies
 
-Last Updated: 2026-05-20
+Last Updated: 2026-05-21
 
 ## Purpose
 
@@ -36,14 +36,14 @@ The internal sharing document should likely follow this progression:
    - Then explain the planner, validator, coordinator, capability, and typed
      dataflow design.
 
-## Study Queue
+## Primary Study Queue
 
 1. **Claude Code / Codex-style coding agents**
    - Question: how do general coding agents organize long tasks?
    - Focus areas: todo lists, tool loops, file-system actions, terminal feedback,
      tests as evaluators, and user interruption.
-   - Expected output: a short case note on coding-agent control flow and plan
-     semantics.
+   - Output: `coding-agents-control-flow.case.md` records the source-level case
+     note on coding-agent control flow and plan semantics.
 
 2. **OpenClaw / personal-agent products**
    - Question: how do personal agents connect to real systems and side effects?
@@ -60,7 +60,12 @@ The internal sharing document should likely follow this progression:
    - Expected output: a note positioning TodoListMiddleware as attention-plan
      infrastructure.
 
-4. **CrewAI Planning / AgentScope PlanNotebook**
+## Supplementary References
+
+The following systems are useful background, but they should not become primary
+case studies for the internal sharing document unless a specific gap appears.
+
+1. **CrewAI Planning / AgentScope PlanNotebook**
    - Question: how do framework-level plan objects work when execution remains
      ReAct-like or role-agent-driven?
    - Focus areas: plan appended to task description, mutable plan notebook,
@@ -68,28 +73,30 @@ The internal sharing document should likely follow this progression:
      and plan-as-runtime-contract.
    - Expected output: a comparison note for soft structured plans.
 
-5. **Magentic-One / Microsoft Magentic orchestration**
+2. **Magentic-One / Microsoft Magentic orchestration**
    - Question: what does manager-led planning look like in a multi-agent system?
    - Focus areas: task ledger, progress ledger, manager authority, worker
      delegation, stall detection, and replan behavior.
    - Expected output: a note on ledger plans and why this is different from
      typed executable plans.
 
-6. **Google ADK Workflow Agents / LangGraph workflow**
+3. **Google ADK Workflow Agents / LangGraph workflow**
    - Question: what does deterministic workflow control look like in modern
      agent frameworks?
    - Focus areas: developer-authored workflows, sequential/parallel/loop agents,
      graph state, reducers, checkpointing, and where LLMs sit inside the graph.
    - Expected output: a note on code-authored workflow as programmatic plan.
 
-7. **Dayfold Agent comparison table**
+## Dayfold Comparison
+
+1. **Dayfold Agent comparison table**
    - Question: how does Dayfold Agent differ from the above patterns?
    - Focus areas: LLM-authored typed plan, programmatic validation, coordinator
      scheduling, capability contracts, `input_bindings`, port values, and
      semantic-validation gaps.
    - Expected output: a table comparing Dayfold Agent against coding agents,
-     personal agents, todo-mediated agents, planning notebooks, manager-led
-     orchestration, and fixed workflow.
+     personal agents, todo-mediated agents, and selected supplementary
+     references when needed.
 
 ## Questions To Answer
 
@@ -111,7 +118,7 @@ For every case study, answer the same questions:
 
 Before drafting the internal document, produce:
 
-1. A short case note for each item in the study queue.
+1. A short case note for each primary item in the study queue.
 2. A plan-shape comparison table:
    - text plan
    - todo list

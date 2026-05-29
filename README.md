@@ -1,6 +1,6 @@
 # LLM Agent Architecture Research
 
-Last Updated: 2026-05-19
+Last Updated: 2026-05-28
 
 A systematic research project studying **Agent control-flow architectures** — how different frameworks, products, and platforms decide who controls execution (the LLM, the developer, or a visual workflow), and what that means for production systems.
 
@@ -40,6 +40,8 @@ This repository grew out of Agent architecture research originally done in `Cybe
 |------|-------|---------|
 | [summary.md](./summary.md) | All directions | Full synthesis: the Agent Map, control-flow taxonomy, cross-project findings |
 | [findings.md](./findings.md) | Cross-project | Key insights that span multiple categories |
+| [internal-agent-sharing-outline.md](./internal-agent-sharing-outline.md) | Internal sharing | Working outline for the Agent sharing document |
+| [internal-agent-sharing-findings.chinese.md](./internal-agent-sharing-findings.chinese.md) | Internal sharing | Chinese finding list for the Agent sharing reference material |
 
 ## Research Files
 
@@ -48,12 +50,21 @@ This repository grew out of Agent architecture research originally done in `Cybe
 | [mastra.research.md](./mastra.research.md) | Mastra TS framework (agent architecture, not memory) | ✅ Done |
 | [domestic-platforms.research.md](./domestic-platforms.research.md) | 7 Chinese Agent platforms (Dify, Coze, Bailian, etc.) | ✅ Done |
 | [deer-flow.research.md](./deer-flow.research.md) | ByteDance DeerFlow 2.0 (`github.com/bytedance/deer-flow`, "super agent harness" on LangChain 1.0 `create_agent` + middleware) | ✅ Done |
+| [hermes-agent.research.md](./hermes-agent.research.md) | Hermes Agent personal-agent runtime shell and OpenClaw comparison | ✅ Done |
 | `google-adk.research.md` | Google ADK Python (`github.com/google/adk-python`) | 📋 Planned |
 | `alibaba-adk.research.md` | Alibaba Bailian ADK / AgentScope | 📋 Planned |
 | `langgraph.research.md` | LangChain LangGraph | 📋 Planned |
 | `vercel-ai-sdk.research.md` | Vercel AI SDK | 📋 Planned |
 | `openai-assistants.research.md` | OpenAI Assistants/Responses API | 📋 Planned |
 | [my-agent-2.0.research.md](./my-agent-2.0.research.md) | Personal production system (P&E + typed dataflow) | ✅ Done |
+
+## Case Study Files
+
+| File | Target | Purpose |
+|------|--------|---------|
+| [coding-agents-control-flow.case.md](./coding-agents-control-flow.case.md) | Claude Code / Codex-style coding agents | Coding-agent control flow, soft plan semantics, and comparison with Dayfold Agent |
+| [claude-code-message-tool-interaction.case.md](./claude-code-message-tool-interaction.case.md) | Claude Code | Source-level note on message normalization, tool results, subagent context construction, fork context, parallel tool calls, and async notifications |
+| [openclaw-agent-design.case.md](./openclaw-agent-design.case.md) | OpenClaw | Personal-agent control primitives, contrasted with Dayfold Agent |
 
 ## Blog Output
 
