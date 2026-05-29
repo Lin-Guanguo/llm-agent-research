@@ -20,25 +20,35 @@ The observed symptom was that two adjacent downstream pages became misaligned:
 
 The root cause was not the upstream editor. It was a structured-output coordinate-system error in the downstream enhancer.
 
-The runtime requested enhancement for absolute page indices in the current snapshot:
+Important nuance: the product page indices were already zero-based. The bug was
+not a 1-based vs. 0-based convention mismatch. The runtime requested enhancement
+for a subset of absolute zero-based page indices in the current snapshot, and
+the prompt required the model to preserve those same indices:
 
 ```text
-requested = [1, 2, 3, 4, 5, 6]
+requested = [1, 2, 3, 4]
 ```
 
-The model returned page indices as if the batch were locally numbered:
+Page `0` was not part of this update. The model nevertheless returned page
+indices as if the requested batch were locally numbered from zero:
 
 ```text
-returned = [0, 1, 2, 3, 4, 5]
+returned = [0, 1, 2, 3]
 ```
 
-The old defensive logic only realigned when the returned set had no overlap with the requested set. In this case there was partial overlap (`1..5`), so the runtime accepted the wrong indices. The result was an off-by-one shift: one page consumed the next page's enhanced result, and the final page fell back to the original content.
+The old defensive logic only realigned when the returned set had no overlap with
+the requested set. In this case there was partial overlap (`1..3`), so the
+runtime accepted the wrong indices. The result was an off-by-one shift: page `0`
+could receive an unintended update, intermediate pages consumed the next page's
+enhanced result, and the final requested page was missing.
 
 ## Lesson
 
 Schema validation only proves output shape. It does not prove business semantics.
 
-A Pydantic model can guarantee that `page_index` is an integer and that a list of enhanced pages exists. It cannot guarantee that the model used the correct business coordinate system unless the runtime validates that explicitly.
+A Pydantic model can guarantee that `page_index` is an integer and that a list
+of enhanced pages exists. It cannot guarantee that the model preserved the
+requested business indices unless the runtime validates that explicitly.
 
 This case supports a three-layer output boundary:
 
@@ -57,13 +67,16 @@ The stable policy is:
 ```text
 if returned_index_set == requested_index_set:
     accept as absolute indices
-elif returned == [requested_i - 1 for requested_i in requested]:
-    repair as deterministic off-by-one relative indices
+elif returned == list(range(len(requested))) and requested != returned:
+    repair as deterministic batch-local renumbering by mapping each result
+    position back to requested[position]
 else:
     reject / drop / fallback / retry
 ```
 
-This treats the specific `12345 -> 01234` pattern as a deterministic repair case. Other failures should not be guessed:
+This treats the specific `1234 -> 0123` pattern as a deterministic repair case:
+the model preserved output order but replaced absolute page indices with
+batch-local indices. Other failures should not be guessed:
 
 - missing pages
 - duplicate pages
@@ -105,4 +118,3 @@ For Dayfold-style agents, the LLM should be allowed to produce candidate structu
 - telemetry for repaired and rejected outputs
 
 This fits the larger Dayfold architecture thesis: low-token, high-stability business agents cannot rely only on the model obeying prompts. They need programmatic contracts around every model-produced artifact.
-
