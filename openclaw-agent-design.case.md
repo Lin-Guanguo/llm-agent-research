@@ -1,6 +1,6 @@
 # Case: OpenClaw Personal Agent Design
 
-Last Updated: 2026-05-21
+Last Updated: 2026-06-02
 
 ## Purpose
 
@@ -57,6 +57,49 @@ only the conclusions needed for the internal Agent sharing document.
 - `/Users/linguanguo/dev/openclaw/src/agents/openclaw-tools.ts:139`
   lists OpenClaw-specific tools: browser, canvas, nodes, cron, messaging, TTS,
   gateway, session tools, subagent tools, search/fetch, image, and PDF tools.
+- OpenClaw `0f1f1a1f`, `src/agents/tool-catalog.ts:39`
+  ([GitHub](https://github.com/openclaw/openclaw/blob/0f1f1a1fd7b9087f49e7efeb899bf18f651bfebe/src/agents/tool-catalog.ts#L39))
+  defines the current OpenClaw core tool sections: files, runtime, web, memory,
+  sessions, UI, messaging, automation, nodes, agents, and media.
+- OpenClaw `0f1f1a1f`, `src/agents/tool-catalog.ts:53`
+  ([GitHub](https://github.com/openclaw/openclaw/blob/0f1f1a1fd7b9087f49e7efeb899bf18f651bfebe/src/agents/tool-catalog.ts#L53))
+  lists the current core catalog entries, including file, runtime, web, memory,
+  session, messaging, automation, agent-state, and media tools.
+- OpenClaw `0f1f1a1f`, `src/agents/tool-catalog.ts:356`
+  ([GitHub](https://github.com/openclaw/openclaw/blob/0f1f1a1fd7b9087f49e7efeb899bf18f651bfebe/src/agents/tool-catalog.ts#L356))
+  defines the `minimal`, `coding`, `messaging`, and `full` tool profiles.
+- OpenClaw `0f1f1a1f`, `src/agents/openclaw-tools.ts:400`
+  ([GitHub](https://github.com/openclaw/openclaw/blob/0f1f1a1fd7b9087f49e7efeb899bf18f651bfebe/src/agents/openclaw-tools.ts#L400))
+  assembles the current OpenClaw runtime tools for nodes, cron, message,
+  heartbeat, transcripts, media, gateway, goal, session, subagent, web, image,
+  PDF, and plugin surfaces.
+- OpenClaw `0f1f1a1f`, `src/agents/agent-tools.ts:724`
+  ([GitHub](https://github.com/openclaw/openclaw/blob/0f1f1a1fd7b9087f49e7efeb899bf18f651bfebe/src/agents/agent-tools.ts#L724))
+  constructs the base coding tools and rewrites shell execution into `exec`,
+  `process`, and optional `apply_patch`.
+- OpenClaw `0f1f1a1f`, `src/agents/tool-search.ts:22`
+  ([GitHub](https://github.com/openclaw/openclaw/blob/0f1f1a1fd7b9087f49e7efeb899bf18f651bfebe/src/agents/tool-search.ts#L22))
+  defines the Tool Search control tools: `tool_search_code`, `tool_search`,
+  `tool_describe`, and `tool_call`.
+- OpenClaw `0f1f1a1f`, `src/agents/tool-search.ts:423`
+  ([GitHub](https://github.com/openclaw/openclaw/blob/0f1f1a1fd7b9087f49e7efeb899bf18f651bfebe/src/agents/tool-search.ts#L423))
+  resolves Tool Search config and falls back from code mode to tools mode when
+  the isolated Node child process is unavailable.
+- OpenClaw `0f1f1a1f`, `src/agents/tool-search.ts:834`
+  ([GitHub](https://github.com/openclaw/openclaw/blob/0f1f1a1fd7b9087f49e7efeb899bf18f651bfebe/src/agents/tool-search.ts#L834))
+  compacts eligible tools behind the visible Tool Search control surface.
+- OpenClaw `0f1f1a1f`, `src/agents/tool-search.ts:985`
+  ([GitHub](https://github.com/openclaw/openclaw/blob/0f1f1a1fd7b9087f49e7efeb899bf18f651bfebe/src/agents/tool-search.ts#L985))
+  implements the current lexical search scoring over tool name, id, label, and
+  description.
+- OpenClaw `0f1f1a1f`,
+  `extensions/codex/src/app-server/dynamic-tool-profile.ts:3`
+  ([GitHub](https://github.com/openclaw/openclaw/blob/0f1f1a1fd7b9087f49e7efeb899bf18f651bfebe/extensions/codex/src/app-server/dynamic-tool-profile.ts#L3))
+  excludes Codex app-server-owned tools from the OpenClaw dynamic tool catalog.
+- OpenClaw `0f1f1a1f`,
+  `extensions/codex/src/app-server/thread-lifecycle.ts:1184`
+  ([GitHub](https://github.com/openclaw/openclaw/blob/0f1f1a1fd7b9087f49e7efeb899bf18f651bfebe/extensions/codex/src/app-server/thread-lifecycle.ts#L1184))
+  emits the deferred searchable OpenClaw dynamic tool manifest for Codex runs.
 - `/Users/linguanguo/dev/openclaw/src/agents/pi-tools.ts:270`
   resolves effective tool policies, group policies, subagent policies, sandbox
   tool policies, and execution configuration.
@@ -153,6 +196,46 @@ OpenClaw's default tool surface is not coding-agent-centered in the same way as
 Claude Code. It includes Pi coding tools, but then adds personal-agent tools:
 browser, canvas, messaging, sessions, subagents, cron/wake, gateway, nodes, TTS,
 web search/fetch, image, PDF, channel tools, and plugin tools.
+
+The current OpenClaw source makes this split more explicit. Its catalog defines
+eleven core sections: files, runtime, web, memory, sessions, UI, messaging,
+automation, nodes, agents, and media
+(OpenClaw `0f1f1a1f`, `src/agents/tool-catalog.ts:39`).
+The practical tool surface can be grouped as follows:
+
+| Group | Representative Tools | Role |
+|---|---|---|
+| Workspace / coding | `read`, `write`, `edit`, `apply_patch`; session-level `bash`, `grep`, `find`, `ls` | Observe and modify the workspace. The main OpenClaw coding surface uses `exec` / `process` for shell work, while session tools still define a lighter `bash`-style set. |
+| Runtime execution | `exec`, `process`, `code_execution` | Run commands, manage long-running command sessions, or use provider-backed analysis. |
+| Web / memory | `web_search`, `web_fetch`, `x_search`, `memory_search`, `memory_get` | Fetch outside information and retrieve long-term memory. |
+| Sessions / delegation | `sessions_list`, `sessions_history`, `sessions_send`, `sessions_spawn`, `sessions_yield`, `subagents`, `session_status` | Inspect sessions, read history, send work to another session, spawn child agents, and wait for subagent results. |
+| Messaging / UI / devices | `message`, `browser`, `canvas`, `nodes`, `gateway` | Send channel messages, control UI surfaces, and interact with Gateway or paired devices. |
+| Automation / lifecycle | `cron`, `heartbeat_respond` | Schedule future work, delayed follow-ups, recurring jobs, wake events, and heartbeat outcomes. |
+| Agent state / planning | `agents_list`, `get_goal`, `create_goal`, `update_goal`, `update_plan`, `skill_workshop` | List available agents, maintain current goal or short plan state, and propose reusable skills. |
+| Media | `image`, `pdf`, `image_generate`, `music_generate`, `video_generate`, `tts` | Understand images/PDFs, generate media, and speak text. |
+
+OpenClaw also has a large-catalog strategy. `tools.toolSearch` can compact the
+eligible OpenClaw, MCP, plugin, and client tool catalog behind a smaller visible
+surface. In code mode the model sees `tool_search_code`, an isolated JavaScript
+bridge with `openclaw.tools.search`, `openclaw.tools.describe`, and
+`openclaw.tools.call`; in tools mode it sees `tool_search`, `tool_describe`, and
+`tool_call`
+(OpenClaw `0f1f1a1f`, `src/agents/tool-search.ts:22` and
+`src/agents/tool-search.ts:423`).
+The current search algorithm is lexical rather than semantic: it tokenizes the
+query and scores matches over tool name, catalog id, label, and description
+(OpenClaw `0f1f1a1f`, `src/agents/tool-search.ts:985`).
+
+This is similar in purpose to Claude Code's deferred tool search, but the
+implementation shape is different. OpenClaw first computes the effective tool
+catalog after normal policy filtering, then hides most eligible tools behind a
+catalog bridge (OpenClaw `0f1f1a1f`, `src/agents/tool-search.ts:834`).
+In the Codex extension, OpenClaw dynamic tools default to searchable exposure,
+while app-server-owned tools such as `read`, `write`, `edit`, `apply_patch`,
+`exec`, `process`, `update_plan`, and the search control tools are excluded to
+avoid duplicate ownership
+(OpenClaw `0f1f1a1f`,
+`extensions/codex/src/app-server/dynamic-tool-profile.ts:3`).
 
 Memory is also exposed differently from Claude Code. Claude Code memory is
 mostly file/context mediated: selected memories are prefetched, and the model
