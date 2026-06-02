@@ -1,6 +1,6 @@
 # Hermes Agent Architecture Research
 
-Last Updated: 2026-05-28
+Last Updated: 2026-06-02
 
 ## Sources
 
@@ -105,6 +105,8 @@ The inner loop is conventional: `AIAgent` sends messages and tool schemas to a m
 
 The runtime around that loop is much larger than the loop itself. Hermes implements prompt caching, toolset resolution, plugin and MCP-style extensibility, memory providers, session search, context compression, subagents, cron jobs, gateway adapters, TUI and ACP frontends, approval bridges, checkpoints, file safety, and repeated-tool guardrails. Those mechanisms make the system feel more like an agent product than a thin ReAct demo, but they do not change the central control contract into a typed executable plan.
 
+The user interaction pattern therefore does not change much: a user asks, the model decides the next local step, the runtime executes tools, tool results return to the model, and the loop continues. Hermes' main engineering work is in prompt/context tuning, tool-use governance, and runtime productization rather than a new interaction model.
+
 ## 1. Product Center: Runtime Shell, Not Plan Runtime
 
 Hermes' architecture center is the `AIAgent` plus a family of runtime surfaces:
@@ -194,12 +196,15 @@ So the clean comparison is not "Hermes has a different agent architecture." It i
 | State model | SQLite sessions/messages with FTS, memory files, external memory providers, cached system prompt, compression. | Persistent sessions, workspace memory, context engine, memory search/get, channel state. |
 | Delegation | Child `AIAgent` instances, restricted toolsets, batch parallel execution, depth and pause controls. | Gateway-mediated child sessions, spawn limits, parent steering/list/read/terminate, completion pushback. |
 | Long-running work | Cron jobs, no-agent watchdogs, gateway ticker, background process notifications. | Cron, wake, heartbeat, persistent sessions, subagents. |
+| Out-of-box breadth | Broader prewired workstation surface: files, terminal, browser/web, vision/image, skills, memory, session search, delegation, cron, messaging, Home Assistant, kanban, computer-use, TUI, ACP, and dashboard/web surfaces. | Strong personal-agent/channel surface, with emphasis on messaging channels, identity, owner policy, session routing, memory, wake/heartbeat, and OpenClaw-specific tool wrapping. |
 | UX/runtime hardening | Agent cache, active-session queueing, clarify/approval bridges, TUI, ACP, long-running notifications, auto-title, compression split handling. | Channel routing, session isolation, subagents, owner-only tools, sandboxing, approvals, heartbeat. |
 | Architectural center | Productized personal-agent runtime shell around an LLM tool loop. | Personal-agent shell around an LLM tool loop. |
 
 OpenClaw's note also says its subagent design is manager-worker orchestration where the dependency structure stays mostly in model attention and session messages (`/Users/linguanguo/dev/llm-agent-research/openclaw-agent-design.case.md:317`). Hermes' `delegate_task` implementation matches that class of primitive: it makes child agents practical and observable, but it does not create a typed dependency graph.
 
 The plausible reason Hermes may feel better is therefore implementation maturity and product breadth, not a fundamentally different control-flow primitive. Source-level examples include per-session agent caching for prompt-cache hits (`/Users/linguanguo/dev/hermes-agent/gateway/run.py:16741`), SQLite FTS session search (`/Users/linguanguo/dev/hermes-agent/hermes_state.py:2154`), path-safe concurrent tool execution (`/Users/linguanguo/dev/hermes-agent/agent/tool_dispatch_helpers.py:103`), structured context compression with tool-pair repair (`/Users/linguanguo/dev/hermes-agent/agent/context_compressor.py:1239`), gateway active-session queue/bypass logic (`/Users/linguanguo/dev/hermes-agent/gateway/platforms/base.py:3278`), ACP/TUI surfaces (`/Users/linguanguo/dev/hermes-agent/acp_adapter/server.py:1243`, `/Users/linguanguo/dev/hermes-agent/tui_gateway/server.py:3339`), and cron no-agent watchdog mode (`/Users/linguanguo/dev/hermes-agent/cron/scheduler.py:1204`).
+
+In short: Hermes appears more out-of-box because it bundles more prewired tools, frontends, schedulers, memory/search paths, and safety/runtime details into the default product. OpenClaw is closer to a multi-channel personal-assistant shell whose hard work is channel identity, routing, ownership, security policy, and long-running messaging lifecycle. The difference is mostly prompt/context engineering plus tool and runtime integration depth, not a major change in the human-agent interaction loop.
 
 ## 9. Architecture Position
 
@@ -223,5 +228,4 @@ It implements many explicit primitives:
 
 But its execution state is still mostly conversation state, context state, runtime state, and tool observations. The runtime validates, repairs, gates, compresses, persists, dispatches, resumes, interrupts, and delivers. It does not make a typed executable plan the central object that the scheduler owns.
 
-**Conclusion:** Hermes and OpenClaw appear to occupy the same architecture family: long-running personal-agent systems around model-driven tool loops. Hermes' likely advantage is not a new control-flow theory, but a more aggressively engineered runtime envelope: cache discipline, session/search infrastructure, tool-call hygiene, UI/ACP/gateway handling, cron/no-agent support, and operational guardrails.
-
+**Conclusion:** Hermes and OpenClaw appear to occupy the same architecture family: long-running personal-agent systems around model-driven tool loops. Hermes' likely advantage is not a new control-flow theory or interaction mode, but a more aggressively engineered runtime envelope: prompt/cache discipline, session/search infrastructure, tool-call hygiene, broader built-in tools, UI/ACP/gateway handling, cron/no-agent support, and operational guardrails.

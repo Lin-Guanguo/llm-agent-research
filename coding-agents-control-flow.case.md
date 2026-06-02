@@ -1,6 +1,6 @@
 # Case: Claude Code / Codex-Style Coding Agents
 
-Last Updated: 2026-05-21
+Last Updated: 2026-06-01
 
 ## Purpose
 
@@ -17,6 +17,13 @@ plans, todos, plan modes, subagents, tool boundaries, and verification
 mechanisms, but their main execution model remains a model-driven tool loop.
 The plan usually helps the model and user coordinate; it does not become a
 deterministic workflow IR that the runtime schedules step by step.
+
+Update: Claude Code Dynamic Workflows, released after the original version of
+this note, add a separate plan-as-code mode. For workflow-triggered tasks,
+Claude writes a JavaScript orchestration script and the workflow runtime
+executes that script across subagents. The ordinary Claude Code loop still fits
+the analysis below, but Dynamic Workflows are now an important exception. See
+[claude-code-dynamic-workflows.case.md](./claude-code-dynamic-workflows.case.md).
 
 ## Sources
 
@@ -109,6 +116,12 @@ Related prior memory/context research:
 - `/Users/linguanguo/dev/llm-memory-research/claude-code-sourcemap.research.md`
 - `/Users/linguanguo/dev/llm-memory-research/claude-code-swarm.research.md`
 
+Related current control-flow research:
+
+- [claude-code-dynamic-workflows.case.md](./claude-code-dynamic-workflows.case.md)
+  covers Claude Code's newer JavaScript workflow mode and public `.workflow.js`
+  examples.
+
 ## Short Position
 
 Claude Code and Codex-style agents are best understood as:
@@ -118,7 +131,9 @@ Claude Code and Codex-style agents are best understood as:
 > diffs, user review, and verifier agents.
 
 They are not plan-free. They simply do not treat the plan as the main executable
-runtime contract.
+runtime contract in the ordinary model-tool loop. Dynamic Workflows are the
+newer exception: for those runs, the plan becomes JavaScript orchestration code
+that the runtime executes across subagents.
 
 This distinction matters for Dayfold Agent:
 

@@ -1,6 +1,6 @@
 # LLM Agent Architecture Research
 
-Last Updated: 2026-05-28
+Last Updated: 2026-06-01
 
 A systematic research project studying **Agent control-flow architectures** — how different frameworks, products, and platforms decide who controls execution (the LLM, the developer, or a visual workflow), and what that means for production systems.
 
@@ -63,6 +63,7 @@ This repository grew out of Agent architecture research originally done in `Cybe
 | File | Target | Purpose |
 |------|--------|---------|
 | [coding-agents-control-flow.case.md](./coding-agents-control-flow.case.md) | Claude Code / Codex-style coding agents | Coding-agent control flow, soft plan semantics, and comparison with Dayfold Agent |
+| [claude-code-dynamic-workflows.case.md](./claude-code-dynamic-workflows.case.md) | Claude Code Dynamic Workflows | Research note on LLM-authored JavaScript workflow scripts, public `.workflow.js` examples, secondary analysis, and architecture position |
 | [claude-code-message-tool-interaction.case.md](./claude-code-message-tool-interaction.case.md) | Claude Code | Source-level note on message normalization, tool results, subagent context construction, fork context, parallel tool calls, and async notifications |
 | [openclaw-agent-design.case.md](./openclaw-agent-design.case.md) | OpenClaw | Personal-agent control primitives, contrasted with Dayfold Agent |
 
