@@ -205,7 +205,29 @@ Planner 不是完全无状态 prompt。它会根据当前 request、历史状态
 
 Runtime 不让模型自由决定每一步，而是验证 DAG、调度 ready step、执行 capability 或 internal subagent，并写入 port values 和 step state。
 
-业务阶段会影响 planner policy、能力集合和合法 DAG shape。后续如果业务模式更多，这部分会更像一个 planner state machine，但分享里不需要展开具体状态。
+### 4.1 request_type：入口决定 planner 形态
+
+这里还有一个实际设计点：Dayfold 不是试图让同一个 planner prompt 覆盖所有对话场景。端上本来就有明确的入口差异，比如 onboarding、chat、story。我们把这种入口差异通过 `request_type` 传进 Agent。
+
+`request_type` 的作用可以简单理解为：决定 planner 形态。
+
+```text
+request_type
+-> planner prompt / policy
+-> planner 可见的 capability / internal subagent 集合
+-> planner 生成对应场景下的 workflow DAG
+```
+
+这样做的原因是，不同场景的 planner 目标不同。Onboarding 更像固定开场流程，chat 更像需求收集和确认，story 更像正式生成和编辑。如果全部压进一个 prompt，prompt 会越来越大，而且模型很难稳定判断当前到底该遵守哪套规则。
+
+目前可以先按几个场景理解：
+
+- `chat`：需求收集、灵感引导、确认创作方向。重点不是立刻生成完整作品，而是把用户意图整理到可执行的创作表单或故事方向里。
+- `story`：正式生成和后续编辑。Planner 需要面向完整创作链路，选择 story writer、style、image、tts 等能力，并处理跨轮编辑。
+- `onboarding`：新用户开场链路。它更接近固定流程，需要围绕用户画像、OC seed、定制画风、首轮故事和渲染建立稳定的首轮体验。
+- `oc`：未来可能独立出来的 OC 设计 / 角色设定场景。它可能更关注角色、设定、画风和素材组织，而不是直接进入完整 story 生成链路。
+
+所以 `request_type` 不是把业务逻辑硬编码成完整 workflow，而是在 Plan-and-Execute 之前先做一次业务场景收束：让 planner 在更小、更明确的场景里生成 DAG。它牺牲了一点通用性，换来更清晰的 planner policy、更少的可选动作和更稳定的输出下限。
 
 Dayfold 选择 Planned DAG Workflow，主要收益是：
 
