@@ -1,26 +1,16 @@
 # 从工程实践上理解 Agent，核心很简单
 
-Last Updated: 2026-06-09
+Last Updated: 2026-06-11
 
 副标题：通用 Agent 保持最小循环，专用 Agent 开始比拼业务组装和效果评估。
 
-从工程实践上看，Agent 的核心并不复杂：模型在上下文里判断下一步，要么调用工具并观察结果，要么输出结果并结束。
+从工程实践上看，Agent 的核心并不复杂：模型在上下文里判断下一步，要么调用工具并观察结果，要么输出结果并结束。真正复杂的是外层系统：怎样把模型的不确定性，放进一个可观察、可约束、可恢复的工程结构里。
 
-真正复杂的是外层系统：怎样把模型的不确定性，放进一个可观察、可约束、可恢复的工程结构里。
+最近读 Anthropic / OpenAI 的 Agent 工程文章、研究 Claude Code / Codex / OpenClaw / LangGraph 等系统之后，我的判断是：通用 Agent 的主形状已经基本收敛——保持在最简单、最灵活的 model-tool-observation loop 上，用更丰富的 tool surface 和更强的 harness 承接复杂性。
 
-我的判断是：通用 Agent 的主形状已经基本收敛。它们会保持在最简单、最灵活的 model-tool-observation loop 上，用更丰富的 tool surface 和更强的 harness 承接复杂性。
+专用 Agent 走的是另一条路。它不追求覆盖所有未知任务，而是在相对稳定的业务场景里，把一类流程重复跑很多次。这个目标一直没变，变的是起点：积木齐全之后，问题不再是能不能跑通，而是怎么组合组件，才能让失败被看见、被处理，高风险动作不越界。
 
-专用 Agent 的重心则变了。它不追求覆盖所有未知任务，而是在相对稳定的业务场景里，把一类流程重复跑很多次。基础积木已经齐全之后，真正的问题变成：怎么组合这些组件，才能在长期运行里稳定交付，而不是偶尔跑通。
-
-这里的“效果好”不是 demo 里能跑一次，而是在大量重复任务里，失败能被看见、能被处理，高风险动作不会越界。
-
-这是我最近读 Anthropic / OpenAI 的 Agent 工程文章、研究 Claude Code / Codex / OpenClaw / LangGraph 等系统后，越来越强的感受。
-
-早期大家还在探索“Agent 到底该怎么写”。从 ReAct 到 Planning、Memory、多 Agent，各种名字都很有启发。那时更像是在确认 Agent 系统需要哪些控制原语。
-
-但到今天，很多底层组件已经比较清晰了。模型调用工具、接收 observation 已经成为标配；计划、记忆、subagent、长程任务、验证和审批，也逐渐沉淀成常见的 harness 能力。
-
-所以问题正在从“有哪些 Agent 范式”转向“怎么组合这些原语”：组件是否贴合业务，结构是否顺着模型能力，质量下限是否能通过验证和评估被持续拉上来。
+早期从 ReAct 到 Planning、Memory、多 Agent 的范式研究，更像是在确认 Agent 系统需要哪些控制原语。今天这些积木已经齐全，问题正在从“有哪些范式”转向“怎么组合这些原语”。
 
 这篇文章想讨论的就是这个变化：通用 Agent 为什么保持简单，专用 Agent 为什么开始需要按业务搭积木。
 
@@ -83,12 +73,10 @@ OpenClaw 这类 personal agent 的重点不一样。它不是把 Agent 主要放
 
 它的 tool surface 更关心：
 
-- 记忆和长期偏好；
-- 会话和多渠道消息；
-- 定时任务、heartbeat、未来唤醒；
-- 浏览器、外部应用和设备；
-- 用户身份、权限和副作用边界；
-- 子会话、子 agent 和后台生命周期。
+- 记忆、长期偏好和会话连续性；
+- 多渠道消息、浏览器、外部应用和设备；
+- 定时任务、heartbeat、子会话和后台生命周期；
+- 用户身份、权限和副作用边界。
 
 Personal agent 的难点不是单次任务计划，而是 continuity 和 access boundary：它要知道“谁在和我说话”“这属于哪个 session”“哪些记忆相关”“哪些动作需要确认”“后台任务完成后怎么回到用户上下文”。
 
@@ -98,7 +86,7 @@ Personal agent 的难点不是单次任务计划，而是 continuity 和 access 
 
 普通 tool 更像函数调用：模型发起调用，runtime 执行，结果立刻作为 observation 回到上下文。
 
-但 cron、heartbeat、subagent、background task 更像异步 tool：一次 tool call 启动或登记一个长生命周期执行，真实工作在另一个生命周期里并发进行。完成后，结果再通过 poll、retrieve、runtime notification、wake event、session update 或新的 user message 回到 Agent 上下文。
+但 cron、heartbeat、subagent、background task 更像异步 tool：一次 tool call 启动或登记一个长生命周期执行，真实工作在另一个生命周期里并发进行。完成后，结果回到 Agent 上下文的路只有两条：要么 runtime 主动注入上下文，要么上下文里留有线索、模型记得去轮询。
 
 这说明 tool surface 不只是“函数集合”。它决定模型能触达什么空间：文件系统、shell、记忆、会话、后台任务、未来时间点、外部系统，甚至其他 Agent。
 
@@ -142,11 +130,7 @@ Personal agent 的难点不是单次任务计划，而是 continuity 和 access 
 
 但专用场景的要求不同。面对固定业务场景和会被重复执行成千上万次的流程，系统不能只追求少数情况下的高上限，还要保证大多数情况下的质量下限。这时就需要把一些原本靠模型临场判断的东西，逐步变成显式 state、workflow、validator、repair、fallback 和 evaluation。
 
-这会形成两条优化路线。
-
-通用 Agent 更关注能力上限。它的主形状已经比较固定：最小 loop + 足够丰富的 harness。它会不断增加更适合模型使用的 tool、更好的上下文组织、更强的模型、更好的评测，但不太愿意把流程限制得太死，因为开放任务的价值就在于模型可以自己探索。
-
-专用 Agent 更关注质量下限。它也需要模型能力，但不会把所有决策都交给模型。它会把高频、稳定、可验证的业务流程收束成显式控制流，用程序负责验证、调度、恢复和评测。
+于是形成两条优化路线：通用 Agent 守能力上限，保持最小 loop，持续扩展 tool surface 和 harness；专用 Agent 守质量下限，把高频、可验证的业务流程收束成显式控制流，用程序负责验证、调度和恢复。
 
 ## 4. Plan 是通用和专用的分水岭
 
@@ -205,7 +189,9 @@ Dynamic Workflow 试图同时拿到两件事：
 
 这也是专用 Agent 最值得关注的区域：它不像固定 Workflow 那样完全写死，也不像 Context Plan 那样完全依赖模型注意力，而是在业务边界内动态生成执行结构。
 
-## 5. Planned Workflow：让业务流程成为 Runtime Contract
+## 5. Planned DAG Workflow：让业务流程成为 Runtime Contract
+
+先交代一下定位。这一章说的 Planned DAG Workflow 属于上一类 Dynamic Workflow：planner 在运行时生成执行结构，runtime 负责验证和执行，这一点和 Claude Code 的 Dynamic Workflows 有一定相似性。但它不是什么公开的权威方案，而是我根据自己所在业务的流程设计的一套实践，写出来供对照参考。
 
 如果我们做的是一个通用 coding agent，让模型拿着工具自由探索是合理的。它面对的是开放任务，测试和 diff 又能持续提供反馈。
 
@@ -231,14 +217,16 @@ Dynamic Workflow 试图同时拿到两件事：
 ```text
 planner 生成 workflow DAG
 -> runtime 验证并执行
--> internal subagents / capabilities 完成具体步骤
+-> 内部的能力模块完成具体步骤
 ```
 
-顶层不是一个自由行动的 LLM manager，而是程序化 workflow runtime。LLM 参与其中，但主要产出结构化 artifacts：
+这里的能力模块（capability）指注册在系统里的执行单元——“选风格”“写脚本”“生成图片”这类封装好的步骤，可能由模型实现，也可能是普通程序。
+
+顶层不是一个自由行动的 LLM manager，而是程序化 workflow runtime。LLM 参与其中，但主要产出结构化的产物：
 
 - planner 产出 workflow DAG；
-- subagent / capability 产出 typed output；
-- validator / reviewer 产出 structured verdict。
+- 能力模块产出带类型的结果；
+- validator 产出结构化的检查结论。
 
 一个脱敏后的 plan 大致像这样：
 
@@ -269,23 +257,15 @@ planner 生成 workflow DAG
         "style": "style_select_0.style_description",
         "pages": "draft_write_0.pages"
       }
-    },
-    {
-      "step_id": "media_render_0",
-      "capability_id": "media_render",
-      "input_bindings": {
-        "tasks": "page_enhance_0.render_tasks",
-        "style_id": "style_select_0.style_id"
-      }
     }
   ]
 }
 ```
 
-这个 Plan 不是给模型看的步骤文本，而是 runtime 可以验证、调度和执行的 contract。每个 step 都有 `step_id`、`capability_id` 和 `input_bindings`。Runtime 可以检查：
+这个 Plan 不是给模型看的步骤文本，而是 runtime 可以验证、调度和执行的 contract。每个 step 都写清楚了自己是哪个能力模块（`capability_id`）、输入从哪来（`input_bindings`）。Runtime 可以检查：
 
-- capability 是否存在；
-- binding 是否引用了可用输出；
+- 引用的能力模块是否存在；
+- 输入绑定是否指向可用的输出；
 - DAG 是否有环；
 - 必要步骤是否缺失；
 - 当前业务模式下是否允许调度这个能力。
@@ -297,7 +277,7 @@ planner 生成 workflow DAG
 ```text
 request mode
 -> planner prompt / policy
--> planner 可见的 capability 集合
+-> planner 可见的能力集合
 -> planner 生成对应场景下的 workflow DAG
 ```
 
@@ -313,27 +293,23 @@ request mode
 
 Planner 产出的 workflow DAG 要先被检查：
 
-- capability 是否存在；
-- binding 是否合法；
+- 引用的能力模块是否存在；
+- 输入绑定是否合法；
 - 依赖是否可达；
-- DAG shape 是否符合当前 planner policy；
+- DAG 形态是否符合当前 planner policy；
 - 当前业务模式下是否允许这些步骤。
 
 它保护的是：这一轮 workflow 能不能被 runtime 执行。
 
 ### 6.2 Step-level Validation and Repair
 
-某个 subagent 即使输出了合法 JSON，也可能在业务语义上错。
-
-例如某个任务要求只处理第 1、2、3、4 页，page index 本来就是绝对下标，但模型容易把这组 batch 重新局部编号，输出成 0、1、2、3。
-
-这不是类型错误。`page_index` 仍然是整数，结构也合法。错误在业务语义：模型把绝对下标改成了 batch-local 下标。
+某个步骤即使输出了合法 JSON，也可能在业务语义上错：字段类型对、结构能解析，但编错了序号、引用错了对象、指向了不该指的产物。
 
 这类问题说明：
 
 > structured output 只解决“可解析”，不保证“业务正确”。
 
-有时更好的解法不是继续强调“不要弄错数字”，而是改变任务表示。例如不要让模型直接输出容易漂移的数字下标，而是给每个对象稳定代号，让模型在更不容易偏移的表示空间里工作。
+有时更好的解法不是在 prompt 里反复强调“不要弄错”，而是改变任务表示。例如不让模型直接输出容易漂移的数字下标，而是给每个对象一个稳定代号，让模型在更不容易出错的表示空间里工作。
 
 Repair 也要非常克制。一个原则是：
 
@@ -345,23 +321,13 @@ Validator 可以发现很多错误，但 repair 只能修 runtime 能证明意�
 
 生产化 Agent 不能只看单次 demo。搭积木搭得好不好，最后必须落到指标上。
 
-它需要持续记录：
-
-- one-shot success；
-- valid plan rate；
-- step failure；
-- token cost；
-- repair path；
-- replan rate；
-- fallback frequency；
-- human intervention rate；
-- 用户侧真实完成率。
+它需要持续记录三类信号。计划质量：valid plan rate 和 one-shot success，说明 planner 在多大比例上一次给出可执行的好计划。执行健康度：step failure、repair 路径、replan 和 fallback 频率，说明系统在哪些地方靠兜底活着。最终效果：人工介入率、用户侧真实完成率和 token 成本，说明这套结构对业务到底值不值。
 
 没有这些指标，系统会停留在“看起来能跑”，但不知道为什么成功，也不知道为什么失败。
 
 ## 7. 最大难点：分配模型和程序的边界
 
-Planned Workflow 的难点不是让模型输出 JSON，而是持续定义模型和程序各自负责什么：
+Planned DAG Workflow 的难点不是让模型输出 JSON，而是持续定义模型和程序各自负责什么：
 
 - 哪些自由度允许交给模型；
 - 哪些自由度必须被 runtime 收回；
@@ -369,15 +335,7 @@ Planned Workflow 的难点不是让模型输出 JSON，而是持续定义模型�
 - 哪些错误必须重试或交给人；
 - 哪些场景应该走通用 loop，哪些场景应该走标准 workflow。
 
-举一个脱敏例子。
-
-用户说：“画面可以更鲜亮一点，色彩艳丽。”
-
-Planner 可能会判断这是一个视觉风格相关需求，于是微调上一轮的风格描述，再交给下游渲染节点。这个行为看起来很聪明，也确实符合用户字面要求。
-
-但在某些业务系统里，这可能是 bug。因为“风格选择”是上游节点的稳定输出，下游节点只能消费它，planner 不能擅自改写它。否则系统的可追溯性、缓存、复用、版本链都会被破坏。
-
-这时就需要 validator 限制 planner 的灵活度：plan 可以选择哪些节点、如何绑定输入，但不能改写某些已经确定的业务 artifact。
+这条边界不是一次划完的。模型聪明的地方，往往也是它最容易越界的地方：看起来更贴心的发挥，可能正好破坏了系统依赖的稳定结构。所以 validator 的职责之一，就是限制 planner 的灵活度——plan 可以选择节点、绑定输入，但不能突破业务的规则。
 
 这就是专用 Agent 和通用 Agent 的核心差别。
 
